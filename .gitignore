@@ -1,0 +1,4 @@
+venv/
+screenshots/
+app/__pycache__
+settings.json
