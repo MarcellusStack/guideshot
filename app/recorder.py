@@ -28,10 +28,18 @@ class ScreenshotRecorder(QObject):
         self.mouse_timer = None
         self.mouse_listener = None
     
-    def create_session_folder(self):
+    def create_session_folder(self, session_name=None):
         """Create a new session folder for screenshots"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.current_session_folder = self.screenshots_folder / f"session_{timestamp}"
+        
+        if session_name:
+            # Use custom name with timestamp
+            folder_name = f"{session_name}_{timestamp}"
+        else:
+            # Fallback to default naming
+            folder_name = f"session_{timestamp}"
+            
+        self.current_session_folder = self.screenshots_folder / folder_name
         self.current_session_folder.mkdir(exist_ok=True)
         return self.current_session_folder
     
@@ -201,11 +209,11 @@ class ScreenshotRecorder(QObject):
             # Default to red if conversion fails
             return (255, 0, 0)
     
-    def start_recording(self, settings):
+    def start_recording(self, settings, session_name=None):
         """Start recording session"""
         self.is_recording = True
         self.settings = settings  # Store settings for screenshot function
-        self.create_session_folder()
+        self.create_session_folder(session_name)
         self.setup_hotkeys(settings)
         return self.current_session_folder
     
