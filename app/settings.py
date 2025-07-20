@@ -9,7 +9,8 @@ class SettingsManager:
             'screenshot_key': 'Space', 
             'mouse_click_enabled': False,
             'circle_size': 20,
-            'circle_color': '#FF0000'  # Red color in hex
+            'circle_color': '#FF0000',  # Red color in hex
+            'create_pdf': False  # Create PDF from screenshots
         }
     
     def load_settings(self):

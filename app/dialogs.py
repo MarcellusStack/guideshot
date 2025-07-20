@@ -92,6 +92,11 @@ class KeySettingsDialog(QDialog):
         circle_color_layout.addStretch()
         layout.addLayout(circle_color_layout)
         
+        # Add PDF creation checkbox
+        self.pdf_checkbox = QCheckBox("Create PDF from screenshots after session")
+        self.pdf_checkbox.setChecked(self.settings.get('create_pdf', False))
+        layout.addWidget(self.pdf_checkbox)
+        
         # Add close button
         self.close_btn = QPushButton("Close")
         layout.addWidget(self.close_btn)
@@ -106,6 +111,7 @@ class KeySettingsDialog(QDialog):
         self.mouse_click_checkbox.toggled.connect(self.toggle_mouse_click)
         self.circle_size_spinbox.valueChanged.connect(self.update_circle_size)
         self.circle_color_button.clicked.connect(self.choose_circle_color)
+        self.pdf_checkbox.toggled.connect(self.toggle_pdf_creation)
         self.close_btn.clicked.connect(self.accept)
         
     def toggle_mouse_click(self, checked):
@@ -141,6 +147,12 @@ class KeySettingsDialog(QDialog):
             self.settings_manager.save_settings(self.settings)
             self.update_color_button()
             print(f"Circle color updated to: {color_hex}")
+    
+    def toggle_pdf_creation(self, checked):
+        """Toggle PDF creation setting"""
+        self.settings['create_pdf'] = checked
+        self.settings_manager.save_settings(self.settings)
+        print(f"PDF creation {'enabled' if checked else 'disabled'}")
     
     def set_key(self, key_type):
         dialog = KeyCaptureDialog(key_type, self)

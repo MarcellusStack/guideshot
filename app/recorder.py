@@ -217,12 +217,19 @@ class ScreenshotRecorder(QObject):
         self.setup_hotkeys(settings)
         return self.current_session_folder
     
-    def stop_recording(self):
+    def stop_recording(self, updated_settings=None):
         """Stop recording and cleanup"""
         if not self.is_recording:
             return 0
             
         self.is_recording = False
+        
+        # Update settings if provided
+        if updated_settings:
+            self.settings = updated_settings
+        
+        # Make sure we have the latest settings
+        print(f"Current PDF setting: {self.settings.get('create_pdf', False)}")
         
         # Cleanup keyboard hooks
         try:
@@ -236,6 +243,22 @@ class ScreenshotRecorder(QObject):
         
         # Count screenshots
         screenshot_count = len(list(self.current_session_folder.glob("*.png"))) if self.current_session_folder else 0
+        
+        # Create PDF if enabled
+        if self.settings.get('create_pdf', False) and screenshot_count > 0:
+            try:
+                print("PDF creation is enabled, attempting to create PDF...")
+                pdf_path = self.create_pdf_from_screenshots()
+                print(f"PDF created successfully: {pdf_path}")
+            except Exception as e:
+                print(f"Error creating PDF: {e}")
+                import traceback
+                traceback.print_exc()
+        elif self.settings.get('create_pdf', False):
+            print("PDF creation enabled but no screenshots found")
+        else:
+            print("PDF creation disabled in settings")
+        
         return screenshot_count
     
     def cleanup_mouse_detection(self):
@@ -255,6 +278,103 @@ class ScreenshotRecorder(QObject):
                 print("Mouse timer stopped")
         except Exception as e:
             print(f"Error stopping mouse timer: {e}")
+    
+    def create_pdf_from_screenshots(self):
+        """Create a PDF from all screenshots in the session folder"""
+        print(f"Starting PDF creation...")
+        print(f"Session folder: {self.current_session_folder}")
+        
+        if not self.current_session_folder or not self.current_session_folder.exists():
+            raise Exception("No session folder found")
+        
+        # Get all PNG files sorted by filename (which includes timestamp)
+        screenshot_files = sorted(self.current_session_folder.glob("*.png"))
+        print(f"Found {len(screenshot_files)} PNG files")
+        
+        if not screenshot_files:
+            raise Exception("No screenshots found in session folder")
+        
+        print(f"Creating PDF from {len(screenshot_files)} screenshots...")
+        
+        try:
+            print("Importing reportlab...")
+            # Import reportlab for PDF creation
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.platypus import SimpleDocTemplate, Image as RLImage, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.units import inch
+            print("Reportlab imported successfully")
+            
+            # Create PDF filename
+            pdf_filename = f"{self.current_session_folder.name}.pdf"
+            pdf_path = self.current_session_folder / pdf_filename
+            print(f"PDF will be created at: {pdf_path}")
+            
+            # Create PDF document
+            doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
+            story = []
+            styles = getSampleStyleSheet()
+            print("PDF document initialized")
+            
+            # Add title
+            title = Paragraph(f"Screenshot Session: {self.current_session_folder.name}", styles['Title'])
+            story.append(title)
+            story.append(Spacer(1, 0.2*inch))
+            print("Title added to PDF")
+            
+            # Add each screenshot to PDF
+            for i, screenshot_file in enumerate(screenshot_files, 1):
+                try:
+                    # Add screenshot number
+                    screenshot_title = Paragraph(f"Screenshot {i}", styles['Heading2'])
+                    story.append(screenshot_title)
+                    story.append(Spacer(1, 0.1*inch))
+                    
+                    # Open and resize image to fit page
+                    with Image.open(screenshot_file) as img:
+                        # Calculate size to fit page (A4 with margins)
+                        max_width = 7*inch  # A4 width minus margins
+                        max_height = 9*inch  # A4 height minus margins
+                        
+                        # Calculate scale factor
+                        scale_w = max_width / img.width
+                        scale_h = max_height / img.height
+                        scale = min(scale_w, scale_h, 1)  # Don't scale up
+                        
+                        new_width = img.width * scale
+                        new_height = img.height * scale
+                        
+                        # Add image to PDF
+                        rl_image = RLImage(str(screenshot_file), width=new_width, height=new_height)
+                        story.append(rl_image)
+                        story.append(Spacer(1, 0.2*inch))
+                        
+                except Exception as e:
+                    print(f"Error adding screenshot {screenshot_file} to PDF: {e}")
+                    continue
+            
+            # Build PDF
+            print(f"Building PDF with {len(story)} elements...")
+            doc.build(story)
+            print(f"PDF built successfully at: {pdf_path}")
+            return pdf_path
+            
+        except ImportError:
+            # Fallback to simpler PDF creation using PIL and img2pdf if reportlab not available
+            try:
+                import img2pdf
+                
+                pdf_filename = f"{self.current_session_folder.name}.pdf"
+                pdf_path = self.current_session_folder / pdf_filename
+                
+                # Convert images to PDF
+                with open(pdf_path, "wb") as f:
+                    f.write(img2pdf.convert([str(img) for img in screenshot_files]))
+                
+                return pdf_path
+                
+            except ImportError:
+                raise Exception("PDF creation requires 'reportlab' or 'img2pdf' package. Install with: pip install reportlab")
     
     def get_screenshot_count(self):
         """Get current screenshot count"""

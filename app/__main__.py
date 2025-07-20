@@ -217,8 +217,11 @@ class GuideShot(QMainWindow):
             
         print("Stopping recording (from hotkey signal)...")
         
+        # Reload settings before stopping (in case they were changed)
+        self.settings = self.settings_manager.load_settings()
+        
         # Stop recording and get count
-        screenshot_count = self.recorder.stop_recording()
+        screenshot_count = self.recorder.stop_recording(self.settings)
         
         # Update UI
         self.start_button.setEnabled(True)
@@ -230,10 +233,20 @@ class GuideShot(QMainWindow):
         # Show summary
         try:
             print(f"Recording stopped via hotkey. Screenshots taken: {screenshot_count}")
+            
+            # Check if PDF was created
+            pdf_status = ""
+            if self.settings.get('create_pdf', False):
+                pdf_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.pdf"
+                if pdf_file.exists():
+                    pdf_status = f"\nPDF created: {pdf_file.name}"
+                else:
+                    pdf_status = "\nPDF creation failed"
+            
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
                 f"Screenshots taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}")
+                f"Saved in: {self.recorder.current_session_folder}{pdf_status}")
         except Exception as e:
             print(f"Error showing summary: {e}")
     
@@ -244,8 +257,11 @@ class GuideShot(QMainWindow):
             
         print("Stopping recording (from button)...")
         
+        # Reload settings before stopping (in case they were changed)
+        self.settings = self.settings_manager.load_settings()
+        
         # Stop recording and get count
-        screenshot_count = self.recorder.stop_recording()
+        screenshot_count = self.recorder.stop_recording(self.settings)
         
         # Update UI
         self.start_button.setEnabled(True)
@@ -257,10 +273,20 @@ class GuideShot(QMainWindow):
         # Show summary
         try:
             print(f"Recording stopped via button. Screenshots taken: {screenshot_count}")
+            
+            # Check if PDF was created
+            pdf_status = ""
+            if self.settings.get('create_pdf', False):
+                pdf_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.pdf"
+                if pdf_file.exists():
+                    pdf_status = f"\nPDF created: {pdf_file.name}"
+                else:
+                    pdf_status = "\nPDF creation failed"
+            
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
                 f"Screenshots taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}")
+                f"Saved in: {self.recorder.current_session_folder}{pdf_status}")
         except Exception as e:
             print(f"Error showing summary: {str(e)}")
             QMessageBox.warning(None, "Error", "Recording stopped, but there was an error showing the summary.")
