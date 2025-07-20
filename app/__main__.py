@@ -1,9 +1,11 @@
 import sys
+from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, 
-    QWidget, QMessageBox
+    QWidget, QMessageBox, QLabel
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 
 # Import our custom modules
 from .settings import SettingsManager
@@ -14,7 +16,9 @@ class GuideShot(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("GuideShot v0.1")
+        # Set window size to 800x600 as requested
         self.setGeometry(100, 100, 800, 600)
+        self.setMinimumSize(600, 450)  # Prevent window from being too small
         
         # Initialize components
         self.settings_manager = SettingsManager()
@@ -33,22 +37,119 @@ class GuideShot(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setSpacing(12)  # Reduced spacing for 600px height
+        layout.setContentsMargins(30, 20, 30, 20)  # Reduced margins
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center all content
         
-        # Create buttons
+        # Add app title
+        title_label = QLabel("GuideShot")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 28px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 2px;
+            }
+        """)
+        layout.addWidget(title_label)
+        
+        # Add version number directly under title
+        version_label = QLabel("v0.1")
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        version_label.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                color: #7f8c8d;
+                margin-bottom: 10px;
+            }
+        """)
+        layout.addWidget(version_label)
+        
+        # Add branding image with fixed size
+        try:
+            branding_path = Path("assets/branding.png")
+            if branding_path.exists():
+                branding_label = QLabel()
+                pixmap = QPixmap(str(branding_path))
+                # Smaller fixed size for better proportion (220x220)
+                scaled_pixmap = pixmap.scaled(220, 220, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                branding_label.setPixmap(scaled_pixmap)
+                branding_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                branding_label.setFixedSize(220, 220)  # Fixed size container
+                branding_label.setContentsMargins(0, 5, 0, 5)  # Reduced margin around the image
+                layout.addWidget(branding_label)
+            else:
+                print("Branding image not found at assets/branding.png")
+        except Exception as e:
+            print(f"Error loading branding image: {e}")
+        
+       
+        
+        
+        # Create buttons with better styling
+        button_style = """
+            QPushButton {
+                font-size: 14px;
+                padding: 8px 24px;
+                border: 2px solid #3498db;
+                border-radius: 6px;
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+                border-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #21618c;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+                border-color: #bdc3c7;
+                color: #7f8c8d;
+            }
+        """
+        
         self.start_button = QPushButton("Start Capturing")
         self.stop_button = QPushButton("Stop Capturing")
         self.set_key_button = QPushButton("Set Keys")
         self.close_button = QPushButton("Close")
         
-        # Add buttons to layout
-        layout.addWidget(self.start_button)
-        layout.addWidget(self.stop_button)
-        layout.addWidget(self.set_key_button)
-        layout.addWidget(self.close_button)
+        # Apply styling to buttons
+        for button in [self.start_button, self.stop_button, self.set_key_button, self.close_button]:
+            button.setStyleSheet(button_style)
+            button.setMinimumHeight(35)  # Made buttons shorter
+            button.setMaximumHeight(35)  # Ensure consistent height
+            button.setFixedWidth(200)  # Fixed width so buttons don't span full screen
         
-        # Add some spacing to push buttons to the center
-        layout.addStretch(1)
-        layout.insertStretch(0, 1)
+        # Different style for close button
+        self.close_button.setStyleSheet("""
+            QPushButton {
+                font-size: 14px;
+                padding: 8px 24px;
+                border: 2px solid #e74c3c;
+                border-radius: 6px;
+                background-color: #e74c3c;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+                border-color: #c0392b;
+            }
+            QPushButton:pressed {
+                background-color: #a93226;
+            }
+        """)
+        
+        # Add buttons to layout with spacing and center alignment
+        layout.addWidget(self.start_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.stop_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.set_key_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(10)  # Reduced space before close button
+        layout.addWidget(self.close_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
         # Connect buttons
         self.close_button.clicked.connect(self.close)
