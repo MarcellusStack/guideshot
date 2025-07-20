@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, 
-    QWidget, QMessageBox, QLabel
+    QWidget, QMessageBox, QLabel, QInputDialog
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
@@ -161,13 +161,28 @@ class GuideShot(QMainWindow):
         self.stop_button.setEnabled(False)
     
     def start_recording(self):
+        # Get session name from user
+        session_name, ok = QInputDialog.getText(
+            self, 
+            "Session Name", 
+            "Enter a name for this recording session:",
+            text="feature_demo"
+        )
+        
+        # If user cancelled or didn't enter a name, don't start recording
+        if not ok or not session_name.strip():
+            return
+        
+        # Clean the session name (remove invalid characters for folder names)
+        session_name = self.clean_session_name(session_name.strip())
+        
         # Update UI
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.set_key_button.setEnabled(False)
         
-        # Start recording
-        session_folder = self.recorder.start_recording(self.settings)
+        # Start recording with custom name
+        session_folder = self.recorder.start_recording(self.settings, session_name)
         
         # Minimize the window
         self.showMinimized()
@@ -176,11 +191,24 @@ class GuideShot(QMainWindow):
         mouse_status = "Enabled" if self.settings.get('mouse_click_enabled', False) else "Disabled"
         QMessageBox.information(None, "Recording Started", 
             f"Recording started!\n\n"
+            f"Session: {session_name}\n"
             f"Screenshot Key: {self.settings.get('screenshot_key', 'Space')}\n"
             f"Stop Key: {self.settings.get('stop_key', 'Esc')}\n"
             f"Mouse clicks: {mouse_status}\n\n"
             f"Screenshots will be saved in: {session_folder}\n\n"
             f"The window will be minimized.")
+    
+    def clean_session_name(self, name):
+        """Clean session name to make it safe for folder names"""
+        import re
+        # Replace spaces with underscores and remove invalid characters
+        name = re.sub(r'[<>:"/\\|?*]', '', name)  # Remove invalid Windows chars
+        name = re.sub(r'\s+', '_', name)  # Replace spaces with underscores
+        name = name.lower()  # Convert to lowercase
+        # Ensure it's not empty after cleaning
+        if not name:
+            name = "session"
+        return name
     
     def stop_recording_from_hotkey(self):
         """Called when stop hotkey is pressed"""
