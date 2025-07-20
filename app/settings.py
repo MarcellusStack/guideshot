@@ -7,7 +7,9 @@ class SettingsManager:
         self.default_settings = {
             'stop_key': 'Esc', 
             'screenshot_key': 'Space', 
-            'mouse_click_enabled': False
+            'mouse_click_enabled': False,
+            'circle_size': 20,
+            'circle_color': '#FF0000'  # Red color in hex
         }
     
     def load_settings(self):

@@ -164,10 +164,14 @@ class ScreenshotRecorder(QObject):
             if not isinstance(screenshot, Image.Image):
                 screenshot = Image.frombytes('RGB', screenshot.size, screenshot.rgb)
             
-            # Draw circle at mouse position
+            # Draw circle at mouse position using settings
             draw = ImageDraw.Draw(screenshot)
-            circle_radius = 20
-            circle_color = (255, 0, 0)  # Red
+            circle_radius = self.settings.get('circle_size', 20)
+            
+            # Convert hex color to RGB tuple
+            circle_color_hex = self.settings.get('circle_color', '#FF0000')
+            circle_color = self.hex_to_rgb(circle_color_hex)
+            
             draw.ellipse([
                 mouse_x - circle_radius, mouse_y - circle_radius,
                 mouse_x + circle_radius, mouse_y + circle_radius
@@ -186,9 +190,21 @@ class ScreenshotRecorder(QObject):
             import traceback
             traceback.print_exc()
     
+    def hex_to_rgb(self, hex_color):
+        """Convert hex color to RGB tuple"""
+        try:
+            # Remove # if present
+            hex_color = hex_color.lstrip('#')
+            # Convert to RGB
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        except:
+            # Default to red if conversion fails
+            return (255, 0, 0)
+    
     def start_recording(self, settings):
         """Start recording session"""
         self.is_recording = True
+        self.settings = settings  # Store settings for screenshot function
         self.create_session_folder()
         self.setup_hotkeys(settings)
         return self.current_session_folder

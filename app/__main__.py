@@ -114,7 +114,7 @@ class GuideShot(QMainWindow):
         
         self.start_button = QPushButton("Start Capturing")
         self.stop_button = QPushButton("Stop Capturing")
-        self.set_key_button = QPushButton("Set Keys")
+        self.set_key_button = QPushButton("Settings")
         self.close_button = QPushButton("Close")
         
         # Apply styling to buttons
