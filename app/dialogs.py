@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QDialog, QLabel, QPushButton, QVBoxLayout, QCheckBox, 
-    QHBoxLayout, QSpinBox, QColorDialog
+    QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -166,3 +166,84 @@ class KeySettingsDialog(QDialog):
                 self.stop_key_label.setText(f"Current Stop Key: {dialog.selected_key}")
             else:
                 self.screenshot_key_label.setText(f"Current Screenshot Key: {dialog.selected_key}") 
+
+class GuideInfoDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("New Guide")
+        self.setFixedSize(500, 400)
+        
+        layout = QVBoxLayout(self)
+        
+        # Guide name section
+        name_label = QLabel("Guide Name:")
+        name_label.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
+        layout.addWidget(name_label)
+        
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Enter a name for this guide (e.g., 'Login Feature')")
+        self.name_input.setText("feature_demo")  # Default value
+        layout.addWidget(self.name_input)
+        
+        layout.addSpacing(15)
+        
+        # Caption/description section
+        caption_label = QLabel("Caption/Description:")
+        caption_label.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
+        layout.addWidget(caption_label)
+        
+        help_label = QLabel("This description will appear on the first page of the PDF:")
+        help_label.setStyleSheet("color: #666; font-size: 11px; margin-bottom: 5px;")
+        layout.addWidget(help_label)
+        
+        self.caption_input = QTextEdit()
+        self.caption_input.setPlaceholderText("Enter a description for this guide...\n\nExample:\nThis guide demonstrates the login process for new users, including account creation and first-time setup.")
+        self.caption_input.setMaximumHeight(150)
+        layout.addWidget(self.caption_input)
+        
+        layout.addSpacing(15)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        self.cancel_button = QPushButton("Cancel")
+        self.ok_button = QPushButton("Start Guide")
+        
+        button_style = """
+            QPushButton {
+                font-size: 14px;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+        """
+        
+        self.cancel_button.setStyleSheet(button_style + """
+            border: 2px solid #e74c3c;
+            background-color: #e74c3c;
+            color: white;
+        """)
+        
+        self.ok_button.setStyleSheet(button_style + """
+            border: 2px solid #27ae60;
+            background-color: #27ae60;
+            color: white;
+        """)
+        
+        button_layout.addStretch()
+        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.ok_button)
+        layout.addLayout(button_layout)
+        
+        # Connect buttons
+        self.cancel_button.clicked.connect(self.reject)
+        self.ok_button.clicked.connect(self.accept)
+        
+        # Set focus to name input
+        self.name_input.setFocus()
+    
+    def get_guide_info(self):
+        """Return the guide name and caption"""
+        return {
+            'name': self.name_input.text().strip(),
+            'caption': self.caption_input.toPlainText().strip()
+        } 

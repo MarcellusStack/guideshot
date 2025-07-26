@@ -209,10 +209,11 @@ class ScreenshotRecorder(QObject):
             # Default to red if conversion fails
             return (255, 0, 0)
     
-    def start_recording(self, settings, session_name=None):
+    def start_recording(self, settings, session_name=None, guide_info=None):
         """Start recording session"""
         self.is_recording = True
         self.settings = settings  # Store settings for screenshot function
+        self.guide_info = guide_info  # Store guide information for PDF
         self.create_session_folder(session_name)
         self.setup_hotkeys(settings)
         return self.current_session_folder
@@ -316,18 +317,44 @@ class ScreenshotRecorder(QObject):
             styles = getSampleStyleSheet()
             print("PDF document initialized")
             
-            # Add title
-            title = Paragraph(f"Screenshot Session: {self.current_session_folder.name}", styles['Title'])
-            story.append(title)
-            story.append(Spacer(1, 0.2*inch))
-            print("Title added to PDF")
+            # Add title page with guide information
+            if self.guide_info:
+                # Guide title
+                guide_title = self.guide_info.get('name', 'Untitled Guide')
+                title = Paragraph(guide_title, styles['Title'])
+                story.append(title)
+                story.append(Spacer(1, 0.3*inch))
+                
+                # Guide caption/description
+                guide_caption = self.guide_info.get('caption', '')
+                if guide_caption:
+                    caption_paragraph = Paragraph(guide_caption, styles['Normal'])
+                    story.append(caption_paragraph)
+                    story.append(Spacer(1, 0.3*inch))
+                
+                # Screenshot count
+                screenshot_count_text = f"Total Steps: {len(screenshot_files)}"
+                count_paragraph = Paragraph(screenshot_count_text, styles['Heading3'])
+                story.append(count_paragraph)
+                story.append(Spacer(1, 0.5*inch))
+                
+                # Page break after title page
+                from reportlab.platypus import PageBreak
+                story.append(PageBreak())
+            else:
+                # Fallback title if no guide info
+                title = Paragraph(f"Screenshot Session: {self.current_session_folder.name}", styles['Title'])
+                story.append(title)
+                story.append(Spacer(1, 0.2*inch))
+            
+            print("Title page added to PDF")
             
             # Add each screenshot to PDF
-            for i, screenshot_file in enumerate(screenshot_files, 1):
+            for step_number, screenshot_file in enumerate(screenshot_files, 1):
                 try:
-                    # Add screenshot number
-                    screenshot_title = Paragraph(f"Screenshot {i}", styles['Heading2'])
-                    story.append(screenshot_title)
+                    # Add step title (starting from 1)
+                    step_title = Paragraph(f"Step {step_number}", styles['Heading2'])
+                    story.append(step_title)
                     story.append(Spacer(1, 0.1*inch))
                     
                     # Open and resize image to fit page

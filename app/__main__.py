@@ -2,20 +2,20 @@ import sys
 from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, 
-    QWidget, QMessageBox, QLabel, QInputDialog
+    QWidget, QMessageBox, QLabel, QInputDialog, QDialog
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 # Import our custom modules
 from app.settings import SettingsManager
-from app.dialogs import KeySettingsDialog
+from app.dialogs import KeySettingsDialog, GuideInfoDialog
 from app.recorder import ScreenshotRecorder
 
 class GuideShot(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("GuideShot v0.1")
+        self.setWindowTitle("GuideShot v0.2")
         # Set window size to 800x600 as requested
         self.setGeometry(100, 100, 800, 600)
         self.setMinimumSize(600, 450)  # Prevent window from being too small
@@ -161,28 +161,28 @@ class GuideShot(QMainWindow):
         self.stop_button.setEnabled(False)
     
     def start_recording(self):
-        # Get session name from user
-        session_name, ok = QInputDialog.getText(
-            self, 
-            "Session Name", 
-            "Enter a name for this recording session:",
-            text="feature_demo"
-        )
-        
-        # If user cancelled or didn't enter a name, don't start recording
-        if not ok or not session_name.strip():
+        # Get guide name and caption from user
+        dialog = GuideInfoDialog(self)
+        if dialog.exec() != QDialog.Accepted:
             return
         
-        # Clean the session name (remove invalid characters for folder names)
-        session_name = self.clean_session_name(session_name.strip())
+        guide_info = dialog.get_guide_info()
+        
+        # Validate input
+        if not guide_info['name']:
+            QMessageBox.warning(self, "Invalid Input", "Please enter a guide name.")
+            return
+        
+        # Clean the guide name (remove invalid characters for folder names)
+        guide_name = self.clean_session_name(guide_info['name'])
         
         # Update UI
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.set_key_button.setEnabled(False)
         
-        # Start recording with custom name
-        session_folder = self.recorder.start_recording(self.settings, session_name)
+        # Start recording with guide info
+        session_folder = self.recorder.start_recording(self.settings, guide_name, guide_info)
         
         # Minimize the window
         self.showMinimized()
@@ -191,7 +191,7 @@ class GuideShot(QMainWindow):
         mouse_status = "Enabled" if self.settings.get('mouse_click_enabled', False) else "Disabled"
         QMessageBox.information(None, "Recording Started", 
             f"Recording started!\n\n"
-            f"Session: {session_name}\n"
+            f"Guide: {guide_info['name']}\n"
             f"Screenshot Key: {self.settings.get('screenshot_key', 'Space')}\n"
             f"Stop Key: {self.settings.get('stop_key', 'Esc')}\n"
             f"Mouse clicks: {mouse_status}\n\n"
