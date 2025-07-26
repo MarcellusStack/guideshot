@@ -1,6 +1,6 @@
 # GuideShot 🎥 (v0.1)
 
-Create engaging video tutorials effortlessly by combining screenshots with voice narration. GuideShot is an open-source screen capture tool that transforms your screenshots and voice recordings into seamless video content.
+Create engaging screenshot tutorials with optional video and pdf export. GuideShot is an open-source screen capture tool that transforms your screenshots and voice recordings into seamless video content.
 
 ## Features
 
@@ -8,14 +8,11 @@ Create engaging video tutorials effortlessly by combining screenshots with voice
 - 🎤 Voice narration synchronization
 - 🎬 Automatic video generation
 - 💻 Simple and intuitive interface
-
-## Coming Soon
-
-- 🔄 Supabase backend integration
-- 👥 Multi-tenant support with team collaboration
-- ✏️ Advanced editor
-- 🤖 AI-powered features
-- ☁️ Self-hosting capabilities
+- 📁 Take Screenshots in a folder
+- 🏷️ Set custom name for folder screenshot (important for later)
+- 📄 Create optional PDF
+- 🎯 Set optional size of circle and color for screenshot
+- 🖱️ Optional mouse click
 
 ## About
 
