@@ -8,9 +8,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 # Import our custom modules
-from .settings import SettingsManager
-from .dialogs import KeySettingsDialog
-from .recorder import ScreenshotRecorder
+from app.settings import SettingsManager
+from app.dialogs import KeySettingsDialog
+from app.recorder import ScreenshotRecorder
 
 class GuideShot(QMainWindow):
     def __init__(self):

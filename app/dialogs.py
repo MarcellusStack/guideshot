@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
-from .settings import SettingsManager
+from app.settings import SettingsManager
 
 class KeyCaptureDialog(QDialog):
     def __init__(self, key_type, parent=None):
