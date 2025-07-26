@@ -260,6 +260,21 @@ class ScreenshotRecorder(QObject):
         else:
             print("PDF creation disabled in settings")
         
+        # Create video if enabled
+        if self.settings.get('create_video', False) and screenshot_count > 0:
+            try:
+                print("Video creation is enabled, attempting to create video...")
+                video_path = self.create_video_from_screenshots()
+                print(f"Video created successfully: {video_path}")
+            except Exception as e:
+                print(f"Error creating video: {e}")
+                import traceback
+                traceback.print_exc()
+        elif self.settings.get('create_video', False):
+            print("Video creation enabled but no screenshots found")
+        else:
+            print("Video creation disabled in settings")
+        
         return screenshot_count
     
     def cleanup_mouse_detection(self):
@@ -402,6 +417,134 @@ class ScreenshotRecorder(QObject):
                 
             except ImportError:
                 raise Exception("PDF creation requires 'reportlab' or 'img2pdf' package. Install with: pip install reportlab")
+    
+    def create_video_from_screenshots(self):
+        """Create a video from all screenshots in the session folder"""
+        print(f"Starting video creation...")
+        print(f"Session folder: {self.current_session_folder}")
+        
+        if not self.current_session_folder or not self.current_session_folder.exists():
+            raise Exception("No session folder found")
+        
+        # Get all PNG files sorted by filename (which includes timestamp)
+        screenshot_files = sorted(self.current_session_folder.glob("*.png"))
+        print(f"Found {len(screenshot_files)} PNG files")
+        
+        if not screenshot_files:
+            raise Exception("No screenshots found in session folder")
+        
+        print(f"Creating video from {len(screenshot_files)} screenshots...")
+        
+        try:
+            print("Importing moviepy...")
+            from moviepy import ImageSequenceClip, TextClip, CompositeVideoClip, ColorClip, concatenate_videoclips
+            print("MoviePy imported successfully")
+            
+            # Create video filename
+            video_filename = f"{self.current_session_folder.name}.mp4"
+            video_path = self.current_session_folder / video_filename
+            print(f"Video will be created at: {video_path}")
+            
+            # Get screenshot duration from settings
+            duration = self.settings.get('screenshot_duration', 2.0)
+            print(f"Each screenshot will be displayed for {duration} seconds")
+            
+            # Convert Path objects to strings for moviepy
+            image_files = [str(img_path) for img_path in screenshot_files]
+            
+            # Get video dimensions from first screenshot
+            from PIL import Image
+            with Image.open(screenshot_files[0]) as first_img:
+                video_width, video_height = first_img.size
+            print(f"Video dimensions: {video_width}x{video_height}")
+            
+            # Create title scene if guide info is available
+            clips_to_concatenate = []
+            
+            if self.guide_info:
+                print("Creating title scene...")
+                title_duration = 3.0  # Title scene duration in seconds
+                
+                # Create background color clip
+                background = ColorClip(size=(video_width, video_height), color=(30, 30, 30), duration=title_duration)
+                
+                # Create text clips
+                title_clips = [background]
+                
+                # Guide title
+                guide_title = self.guide_info.get('name', 'Untitled Guide')
+                title_text = TextClip(
+                    text=guide_title,
+                    font_size=min(video_width//20, 60),  # Responsive font size
+                    color='white'
+                ).with_position('center').with_start(0).with_duration(title_duration)
+                title_clips.append(title_text)
+                
+                # Guide caption (if available)
+                guide_caption = self.guide_info.get('caption', '')
+                if guide_caption:
+                    # Limit caption length for display
+                    if len(guide_caption) > 200:
+                        guide_caption = guide_caption[:200] + "..."
+                    
+                    caption_text = TextClip(
+                        text=guide_caption,
+                        font_size=min(video_width//40, 24),  # Smaller font for caption
+                        color='lightgray'
+                    ).with_position(('center', video_height * 0.6)).with_start(0).with_duration(title_duration)
+                    title_clips.append(caption_text)
+                
+                # Video length info
+                total_duration = len(screenshot_files) * duration
+                length_text = f"Total Steps: {len(screenshot_files)} | Duration: {total_duration:.1f}s"
+                length_clip = TextClip(
+                    text=length_text,
+                    font_size=min(video_width//50, 20),
+                    color='yellow'
+                ).with_position(('center', video_height * 0.85)).with_start(0).with_duration(title_duration)
+                title_clips.append(length_clip)
+                
+                # Compose title scene
+                title_scene = CompositeVideoClip(title_clips)
+                clips_to_concatenate.append(title_scene)
+                print("Title scene created successfully")
+            
+            # Create video clip from image sequence
+            print("Creating video clip from images...")
+            screenshot_clip = ImageSequenceClip(image_files, durations=[duration] * len(image_files))
+            clips_to_concatenate.append(screenshot_clip)
+            
+            # Concatenate all clips
+            if len(clips_to_concatenate) > 1:
+                print("Combining title scene with screenshots...")
+                final_clip = concatenate_videoclips(clips_to_concatenate)
+            else:
+                final_clip = clips_to_concatenate[0]
+            
+            # Write the video file
+            print("Writing video file... (this may take a moment)")
+            final_clip.write_videofile(
+                str(video_path),
+                fps=24,  # Standard video FPS
+                codec='libx264',  # H.264 codec for good compatibility
+                audio=False  # No audio needed for screenshot videos
+            )
+            
+            # Clean up
+            final_clip.close()
+            if len(clips_to_concatenate) > 1:
+                clips_to_concatenate[0].close()  # Close title scene
+                clips_to_concatenate[1].close()  # Close screenshot clip
+            
+            print(f"Video created successfully at: {video_path}")
+            return video_path
+            
+        except ImportError:
+            # Fallback message if moviepy is not available
+            raise Exception("Video creation requires 'moviepy' package. Install with: pip install moviepy")
+        except Exception as e:
+            print(f"Unexpected error during video creation: {e}")
+            raise
     
     def get_screenshot_count(self):
         """Get current screenshot count"""

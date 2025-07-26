@@ -243,10 +243,19 @@ class GuideShot(QMainWindow):
                 else:
                     pdf_status = "\nPDF creation failed"
             
+            # Check if video was created
+            video_status = ""
+            if self.settings.get('create_video', False):
+                video_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.mp4"
+                if video_file.exists():
+                    video_status = f"\nVideo created: {video_file.name}"
+                else:
+                    video_status = "\nVideo creation failed"
+            
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
                 f"Screenshots taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}{pdf_status}")
+                f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
         except Exception as e:
             print(f"Error showing summary: {e}")
     
@@ -283,10 +292,19 @@ class GuideShot(QMainWindow):
                 else:
                     pdf_status = "\nPDF creation failed"
             
+            # Check if video was created
+            video_status = ""
+            if self.settings.get('create_video', False):
+                video_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.mp4"
+                if video_file.exists():
+                    video_status = f"\nVideo created: {video_file.name}"
+                else:
+                    video_status = "\nVideo creation failed"
+            
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
                 f"Screenshots taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}{pdf_status}")
+                f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
         except Exception as e:
             print(f"Error showing summary: {str(e)}")
             QMessageBox.warning(None, "Error", "Recording stopped, but there was an error showing the summary.")

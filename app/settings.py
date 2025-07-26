@@ -10,7 +10,9 @@ class SettingsManager:
             'mouse_click_enabled': False,
             'circle_size': 20,
             'circle_color': '#FF0000',  # Red color in hex
-            'create_pdf': False  # Create PDF from screenshots
+            'create_pdf': False,  # Create PDF from screenshots
+            'create_video': False,  # Create video from screenshots
+            'screenshot_duration': 2.0  # Duration in seconds each screenshot is shown in video
         }
     
     def load_settings(self):

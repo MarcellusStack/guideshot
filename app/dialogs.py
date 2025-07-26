@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QDialog, QLabel, QPushButton, QVBoxLayout, QCheckBox, 
-    QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit
+    QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -43,7 +43,7 @@ class KeySettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.setFixedSize(450, 450)  # Made taller for new settings
+        self.setFixedSize(450, 520)  # Made taller for video settings
         
         # Initialize settings manager
         self.settings_manager = SettingsManager()
@@ -97,6 +97,25 @@ class KeySettingsDialog(QDialog):
         self.pdf_checkbox.setChecked(self.settings.get('create_pdf', False))
         layout.addWidget(self.pdf_checkbox)
         
+        # Add video creation checkbox
+        self.video_checkbox = QCheckBox("Create video from screenshots after session")
+        self.video_checkbox.setChecked(self.settings.get('create_video', False))
+        layout.addWidget(self.video_checkbox)
+        
+        # Add screenshot duration setting
+        duration_layout = QHBoxLayout()
+        duration_label = QLabel("Screenshot Duration:")
+        self.duration_spinbox = QDoubleSpinBox()
+        self.duration_spinbox.setRange(0.5, 10.0)  # Min 0.5s, Max 10s
+        self.duration_spinbox.setValue(self.settings.get('screenshot_duration', 2.0))
+        self.duration_spinbox.setSuffix(" seconds")
+        self.duration_spinbox.setDecimals(1)
+        self.duration_spinbox.setSingleStep(0.5)
+        duration_layout.addWidget(duration_label)
+        duration_layout.addWidget(self.duration_spinbox)
+        duration_layout.addStretch()
+        layout.addLayout(duration_layout)
+        
         # Add close button
         self.close_btn = QPushButton("Close")
         layout.addWidget(self.close_btn)
@@ -112,6 +131,8 @@ class KeySettingsDialog(QDialog):
         self.circle_size_spinbox.valueChanged.connect(self.update_circle_size)
         self.circle_color_button.clicked.connect(self.choose_circle_color)
         self.pdf_checkbox.toggled.connect(self.toggle_pdf_creation)
+        self.video_checkbox.toggled.connect(self.toggle_video_creation)
+        self.duration_spinbox.valueChanged.connect(self.update_screenshot_duration)
         self.close_btn.clicked.connect(self.accept)
         
     def toggle_mouse_click(self, checked):
@@ -153,6 +174,18 @@ class KeySettingsDialog(QDialog):
         self.settings['create_pdf'] = checked
         self.settings_manager.save_settings(self.settings)
         print(f"PDF creation {'enabled' if checked else 'disabled'}")
+    
+    def toggle_video_creation(self, checked):
+        """Toggle video creation setting"""
+        self.settings['create_video'] = checked
+        self.settings_manager.save_settings(self.settings)
+        print(f"Video creation {'enabled' if checked else 'disabled'}")
+    
+    def update_screenshot_duration(self, value):
+        """Update screenshot duration setting"""
+        self.settings['screenshot_duration'] = value
+        self.settings_manager.save_settings(self.settings)
+        print(f"Screenshot duration updated to: {value} seconds")
     
     def set_key(self, key_type):
         dialog = KeyCaptureDialog(key_type, self)
