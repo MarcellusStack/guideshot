@@ -187,19 +187,8 @@ class GuideShot(QMainWindow):
         # Start recording with guide info
         session_folder = self.recorder.start_recording(self.settings, guide_name, guide_info)
         
-        # Minimize the window
-        self.showMinimized()
-        
-        # Show start message
-        mouse_status = "Enabled" if self.settings.get('mouse_click_enabled', False) else "Disabled"
-        QMessageBox.information(None, "Recording Started", 
-            f"Recording started!\n\n"
-            f"Guide: {guide_info['name']}\n"
-            f"Screenshot Key: {self.settings.get('screenshot_key', 'Space')}\n"
-            f"Stop Key: {self.settings.get('stop_key', 'Esc')}\n"
-            f"Mouse clicks: {mouse_status}\n\n"
-                            f"Guides will be saved in: {session_folder}\n\n"
-            f"The window will be minimized.")
+        # Show countdown screen immediately (don't minimize yet)
+        self.show_countdown_screen(guide_info['name'])
     
     def clean_session_name(self, name):
         """Clean session name to make it safe for folder names"""
@@ -323,6 +312,36 @@ class GuideShot(QMainWindow):
         from app.dialogs import GuidesWindow
         guides_window = GuidesWindow(self)
         guides_window.show()
+    
+    def show_countdown_screen(self, guide_name):
+        """Show countdown screen before recording starts"""
+        from app.dialogs import CountdownDialog
+        # Create countdown dialog as a separate window (not child of main window)
+        self.countdown_dialog = CountdownDialog(guide_name, None)
+        self.countdown_dialog.set_countdown_finished_callback(self.on_countdown_finished)
+        self.countdown_dialog.set_countdown_canceled_callback(self.on_countdown_canceled)
+        self.countdown_dialog.show()
+    
+    def on_countdown_finished(self):
+        """Called when countdown is finished"""
+        # Enable screenshot recording
+        self.recorder.enable_screenshot_recording()
+        
+        # Minimize the main window now
+        self.showMinimized()
+        
+        # No additional dialog - just start recording
+        print(f"Recording started! Screenshot Key: {self.settings.get('screenshot_key', 'Space')}, Stop Key: {self.settings.get('stop_key', 'Esc')}")
+    
+    def on_countdown_canceled(self):
+        """Called when countdown is canceled"""
+        # Reset button states
+        self.start_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
+        self.set_key_button.setEnabled(True)
+        self.show_guides_button.setEnabled(True)
+        
+        print("Recording canceled during countdown")
     
     def closeEvent(self, event):
         if self.recorder.is_recording:

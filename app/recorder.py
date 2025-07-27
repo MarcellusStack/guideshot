@@ -15,6 +15,7 @@ class ScreenshotRecorder(QObject):
     def __init__(self):
         super().__init__()
         self.is_recording = False
+        self.screenshot_recording_enabled = False  # New flag to control screenshot recording
         self.screenshots_folder = Path("guides")
         self.screenshots_folder.mkdir(exist_ok=True)
         self.current_session_folder = None
@@ -153,6 +154,10 @@ class ScreenshotRecorder(QObject):
         """Take a screenshot with mouse position indicator"""
         if not self.is_recording:
             print("Not recording, ignoring screenshot request")
+            return
+            
+        if not self.screenshot_recording_enabled:
+            print("Screenshot recording not yet enabled (countdown in progress), ignoring request")
             return
             
         current_time = datetime.now().timestamp()
@@ -314,11 +319,17 @@ class ScreenshotRecorder(QObject):
     def start_recording(self, settings, session_name=None, guide_info=None):
         """Start recording session"""
         self.is_recording = True
+        self.screenshot_recording_enabled = False  # Disable screenshot recording initially
         self.settings = settings  # Store settings for screenshot function
         self.guide_info = guide_info  # Store guide information for PDF
         self.create_session_folder(session_name)
         self.setup_hotkeys(settings)
         return self.current_session_folder
+    
+    def enable_screenshot_recording(self):
+        """Enable screenshot recording after countdown"""
+        self.screenshot_recording_enabled = True
+        print("Screenshot recording enabled - ready to capture!")
     
     def stop_recording(self, updated_settings=None):
         """Stop recording and cleanup"""

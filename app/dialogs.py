@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox,
     QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 from pathlib import Path
 from app.settings import SettingsManager
@@ -577,4 +577,160 @@ class GuidesWindow(QDialog):
         except Exception as e:
             print(f"Error opening folder: {e}")
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}") 
+            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}")
+
+class CountdownDialog(QDialog):
+    def __init__(self, guide_name, parent=None):
+        super().__init__(parent)
+        self.guide_name = guide_name
+        self.countdown_value = 3  # 3 second countdown
+        
+        # Setup UI
+        self.setup_ui()
+        self.start_countdown()
+        
+        # Store callbacks for when countdown finishes or is canceled
+        self.countdown_finished_callback = None
+        self.countdown_canceled_callback = None
+    
+    def setup_ui(self):
+        """Setup the countdown dialog UI"""
+        self.setWindowTitle("GuideShot - Get Ready!")
+        self.setFixedSize(500, 450)  # Smaller, more reasonable size
+        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Window | Qt.WindowType.Tool)
+        
+        # Center the dialog on screen
+        screen = self.screen()
+        screen_geometry = screen.geometry()
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+        self.move(x, y)
+        
+        # Set focus to this dialog so it appears on top
+        self.raise_()
+        self.activateWindow()
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(25)  # Increased spacing
+        layout.setContentsMargins(40, 40, 40, 40)  # Increased margins
+        
+        # Title
+        title_label = QLabel("Get Ready!")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 28px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 10px;
+            }
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # Guide name
+        guide_label = QLabel(f"Guide: {self.guide_name}")
+        guide_label.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                color: #7f8c8d;
+                margin-bottom: 20px;
+            }
+        """)
+        guide_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(guide_label)
+        
+        # Instructions
+        instructions_label = QLabel("Recording will start in...")
+        instructions_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #7f8c8d;
+                margin-bottom: 10px;
+            }
+        """)
+        instructions_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(instructions_label)
+        
+        # Countdown number
+        self.countdown_label = QLabel(str(self.countdown_value))
+        self.countdown_label.setStyleSheet("""
+            QLabel {
+                font-size: 60px;
+                font-weight: bold;
+                color: #e74c3c;
+                margin: 15px 0;
+                padding: 5px;
+                min-height: 80px;
+            }
+        """)
+        self.countdown_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.countdown_label)
+        
+        # Add spacing before cancel button
+        layout.addSpacing(50)  # More spacing between number and cancel button
+        
+        # Cancel button
+        self.cancel_button = QPushButton("Cancel Recording")
+        self.cancel_button.setStyleSheet("""
+            QPushButton {
+                font-size: 14px;
+                padding: 10px 20px;
+                border: 2px solid #e74c3c;
+                border-radius: 6px;
+                background-color: #e74c3c;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+                border-color: #c0392b;
+            }
+        """)
+        self.cancel_button.clicked.connect(self.cancel_countdown)
+        layout.addWidget(self.cancel_button, alignment=Qt.AlignmentFlag.AlignCenter)
+    
+    def start_countdown(self):
+        """Start the countdown timer"""
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_countdown)
+        self.timer.start(1000)  # Update every 1 second
+    
+    def update_countdown(self):
+        """Update the countdown display"""
+        self.countdown_value -= 1
+        
+        if self.countdown_value > 0:
+            # Update the countdown number
+            self.countdown_label.setText(str(self.countdown_value))
+        else:
+            # Countdown finished
+            self.timer.stop()
+            if self.countdown_finished_callback:
+                self.countdown_finished_callback()
+            self.close()
+    
+    def cancel_countdown(self):
+        """Cancel the countdown and stop recording"""
+        self.timer.stop()
+        # Stop recording if it was started
+        # Since we're not a child of main window, we need to find the main window differently
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        for widget in app.topLevelWidgets():
+            if hasattr(widget, 'recorder') and widget.recorder.is_recording:
+                widget.recorder.stop_recording()
+                break
+        
+        # Call the canceled callback if set
+        if self.countdown_canceled_callback:
+            self.countdown_canceled_callback()
+        
+        self.close()
+    
+    def set_countdown_finished_callback(self, callback):
+        """Set the callback function to call when countdown finishes"""
+        self.countdown_finished_callback = callback
+    
+    def set_countdown_canceled_callback(self, callback):
+        """Set the callback function to call when countdown is canceled"""
+        self.countdown_canceled_callback = callback 
