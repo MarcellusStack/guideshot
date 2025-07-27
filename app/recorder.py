@@ -202,6 +202,12 @@ class ScreenshotRecorder(QObject):
                 mouse_x + circle_radius, mouse_y + circle_radius
             ], outline=circle_color, width=3)
             
+            # Draw helper text if enabled
+            if self.settings.get('helper_text_enabled', False):
+                helper_text = self.settings.get('helper_text', 'Click here')
+                if helper_text.strip():  # Only draw if text is not empty
+                    self.draw_helper_text(screenshot, mouse_x, mouse_y, circle_radius, helper_text)
+            
             # Save screenshot
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             screenshot_path = self.current_session_folder / f"screenshot_{timestamp}.png"
@@ -225,6 +231,85 @@ class ScreenshotRecorder(QObject):
         except:
             # Default to red if conversion fails
             return (255, 0, 0)
+    
+    def draw_helper_text(self, screenshot, mouse_x, mouse_y, circle_radius, helper_text):
+        """Draw helper text with grey background under the circle"""
+        try:
+            from PIL import ImageFont
+            draw = ImageDraw.Draw(screenshot)
+            
+            # Try to use a better font, fallback to default if not available
+            try:
+                # Try common system fonts
+                font_size = max(12, circle_radius // 2)  # Scale font size with circle
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                try:
+                    font = ImageFont.truetype("Arial.ttf", font_size)
+                except:
+                    try:
+                        font = ImageFont.load_default()
+                    except:
+                        # Use draw methods without font if all else fails
+                        font = None
+            
+            # Get text dimensions
+            if font:
+                bbox = draw.textbbox((0, 0), helper_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            else:
+                # Fallback text size estimation
+                text_width = len(helper_text) * 6
+                text_height = 11
+            
+            # Calculate position below the circle with some padding
+            padding = 4
+            text_x = mouse_x - text_width // 2
+            text_y = mouse_y + circle_radius + 8  # 8 pixels below circle
+            
+            # Ensure text doesn't go off screen edges
+            screen_width = screenshot.width
+            screen_height = screenshot.height
+            
+            if text_x < padding:
+                text_x = padding
+            elif text_x + text_width + padding > screen_width:
+                text_x = screen_width - text_width - padding
+                
+            if text_y + text_height + padding > screen_height:
+                text_y = mouse_y - circle_radius - text_height - 8  # Move above circle
+            
+            # Draw subtle grey background rectangle
+            bg_x1 = text_x - padding
+            bg_y1 = text_y - padding
+            bg_x2 = text_x + text_width + padding
+            bg_y2 = text_y + text_height + padding
+            
+            # Semi-transparent grey background
+            overlay = Image.new('RGBA', screenshot.size, (0, 0, 0, 0))
+            overlay_draw = ImageDraw.Draw(overlay)
+            overlay_draw.rectangle([bg_x1, bg_y1, bg_x2, bg_y2], 
+                                 fill=(128, 128, 128, 180))  # Grey with transparency
+            
+            # Composite overlay with screenshot
+            screenshot_rgba = screenshot.convert('RGBA')
+            screenshot_with_bg = Image.alpha_composite(screenshot_rgba, overlay)
+            screenshot_final = screenshot_with_bg.convert('RGB')
+            
+            # Copy the modified screenshot back
+            screenshot.paste(screenshot_final)
+            
+            # Draw white text on top
+            draw = ImageDraw.Draw(screenshot)
+            if font:
+                draw.text((text_x, text_y), helper_text, fill=(255, 255, 255), font=font)
+            else:
+                draw.text((text_x, text_y), helper_text, fill=(255, 255, 255))
+                
+        except Exception as e:
+            print(f"Error drawing helper text: {e}")
+            # Silently fail - helper text is optional
     
     def start_recording(self, settings, session_name=None, guide_info=None):
         """Start recording session"""

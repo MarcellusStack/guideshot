@@ -116,6 +116,25 @@ class KeySettingsDialog(QDialog):
         duration_layout.addStretch()
         layout.addLayout(duration_layout)
         
+        # Add helper text checkbox
+        self.helper_text_checkbox = QCheckBox("Enable helper text under circle")
+        self.helper_text_checkbox.setChecked(self.settings.get('helper_text_enabled', False))
+        layout.addWidget(self.helper_text_checkbox)
+        
+        # Add helper text input
+        helper_text_layout = QHBoxLayout()
+        helper_text_label = QLabel("Helper Text:")
+        self.helper_text_input = QLineEdit()
+        self.helper_text_input.setText(self.settings.get('helper_text', 'Click here'))
+        self.helper_text_input.setPlaceholderText("Enter helper text to display under circle")
+        self.helper_text_input.setEnabled(self.settings.get('helper_text_enabled', False))
+        helper_text_layout.addWidget(helper_text_label)
+        helper_text_layout.addWidget(self.helper_text_input)
+        layout.addLayout(helper_text_layout)
+        
+        # Connect checkbox to enable/disable text input
+        self.helper_text_checkbox.toggled.connect(self.helper_text_input.setEnabled)
+        
         # Add close button
         self.close_btn = QPushButton("Close")
         layout.addWidget(self.close_btn)
@@ -133,6 +152,8 @@ class KeySettingsDialog(QDialog):
         self.pdf_checkbox.toggled.connect(self.toggle_pdf_creation)
         self.video_checkbox.toggled.connect(self.toggle_video_creation)
         self.duration_spinbox.valueChanged.connect(self.update_screenshot_duration)
+        self.helper_text_checkbox.toggled.connect(self.toggle_helper_text)
+        self.helper_text_input.textChanged.connect(self.update_helper_text)
         self.close_btn.clicked.connect(self.accept)
         
     def toggle_mouse_click(self, checked):
@@ -186,6 +207,19 @@ class KeySettingsDialog(QDialog):
         self.settings['screenshot_duration'] = value
         self.settings_manager.save_settings(self.settings)
         print(f"Screenshot duration updated to: {value} seconds")
+    
+    def toggle_helper_text(self, checked):
+        """Toggle helper text setting"""
+        self.settings['helper_text_enabled'] = checked
+        self.settings_manager.save_settings(self.settings)
+        self.helper_text_input.setEnabled(checked)
+        print(f"Helper text {'enabled' if checked else 'disabled'}")
+    
+    def update_helper_text(self, text):
+        """Update helper text setting"""
+        self.settings['helper_text'] = text
+        self.settings_manager.save_settings(self.settings)
+        print(f"Helper text updated to: '{text}'")
     
     def set_key(self, key_type):
         dialog = KeyCaptureDialog(key_type, self)

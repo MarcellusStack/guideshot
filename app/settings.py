@@ -10,9 +10,11 @@ class SettingsManager:
             'mouse_click_enabled': False,
             'circle_size': 20,
             'circle_color': '#FF0000',  # Red color in hex
-                'create_pdf': False,  # Create PDF from guides
-    'create_video': False,  # Create video from guides
-            'screenshot_duration': 2.0  # Duration in seconds each screenshot is shown in video
+            'create_pdf': False,  # Create PDF from guides
+            'create_video': False,  # Create video from guides
+            'screenshot_duration': 2.0,  # Duration in seconds each screenshot is shown in video
+            'helper_text_enabled': False,  # Enable helper text under circle
+            'helper_text': 'Click here'  # Default helper text
         }
     
     def load_settings(self):
