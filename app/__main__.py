@@ -209,6 +209,9 @@ class GuideShot(QMainWindow):
             
         print("Stopping recording (from hotkey signal)...")
         
+        # Hide recording overlay
+        self.hide_recording_overlay()
+        
         # Reload settings before stopping (in case they were changed)
         self.settings = self.settings_manager.load_settings()
         
@@ -257,6 +260,9 @@ class GuideShot(QMainWindow):
             return
             
         print("Stopping recording (from button)...")
+        
+        # Hide recording overlay
+        self.hide_recording_overlay()
         
         # Reload settings before stopping (in case they were changed)
         self.settings = self.settings_manager.load_settings()
@@ -327,6 +333,9 @@ class GuideShot(QMainWindow):
         # Enable screenshot recording
         self.recorder.enable_screenshot_recording()
         
+        # Show recording overlay
+        self.show_recording_overlay()
+        
         # Minimize the main window now
         self.showMinimized()
         
@@ -342,6 +351,18 @@ class GuideShot(QMainWindow):
         self.show_guides_button.setEnabled(True)
         
         print("Recording canceled during countdown")
+    
+    def show_recording_overlay(self):
+        """Show a red border overlay to indicate recording is active"""
+        from app.dialogs import RecordingOverlay
+        self.recording_overlay = RecordingOverlay()
+        self.recording_overlay.show()
+    
+    def hide_recording_overlay(self):
+        """Hide the recording overlay"""
+        if hasattr(self, 'recording_overlay') and self.recording_overlay:
+            self.recording_overlay.close()
+            self.recording_overlay = None
     
     def closeEvent(self, event):
         if self.recorder.is_recording:

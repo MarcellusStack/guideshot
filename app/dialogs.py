@@ -733,4 +733,55 @@ class CountdownDialog(QDialog):
     
     def set_countdown_canceled_callback(self, callback):
         """Set the callback function to call when countdown is canceled"""
-        self.countdown_canceled_callback = callback 
+        self.countdown_canceled_callback = callback
+
+class RecordingOverlay(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setup_ui()
+    
+    def setup_ui(self):
+        """Setup the recording overlay UI"""
+        # Make it a full-screen transparent overlay
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # Get screen size and position
+        screen = self.screen()
+        screen_geometry = screen.geometry()
+        self.setGeometry(screen_geometry)
+        
+        # Create a prominent red border overlay
+        self.setStyleSheet("""
+            QDialog {
+                background-color: transparent;
+                border: 15px solid rgba(255, 0, 0, 0.9);
+            }
+        """)
+        
+        # Add a recording indicator in the bottom-left corner
+        self.recording_label = QLabel("🔴 GuideShot Recording")
+        self.recording_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                background-color: rgba(255, 0, 0, 0.95);
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+        """)
+        
+        # Position the label in the bottom-left corner
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        layout.addStretch()  # Push everything to the bottom
+        
+        # Create a horizontal layout for the bottom
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addWidget(self.recording_label)
+        bottom_layout.addStretch()  # Push label to the left
+        bottom_layout.setContentsMargins(20, 0, 20, 20)
+        
+        layout.addLayout(bottom_layout) 
