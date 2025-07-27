@@ -173,13 +173,30 @@ class ScreenshotRecorder(QObject):
                 screenshot = Image.frombytes('RGB', screenshot.size, screenshot.rgb)
             
             # Draw circle at mouse position using settings
-            draw = ImageDraw.Draw(screenshot)
             circle_radius = self.settings.get('circle_size', 20)
             
             # Convert hex color to RGB tuple
             circle_color_hex = self.settings.get('circle_color', '#FF0000')
             circle_color = self.hex_to_rgb(circle_color_hex)
             
+            # Create a transparent overlay for the inner circle
+            overlay = Image.new('RGBA', screenshot.size, (0, 0, 0, 0))
+            overlay_draw = ImageDraw.Draw(overlay)
+            
+            # Draw inner filled circle with reduced opacity (40% of original)
+            inner_color = (*circle_color, 102)  # RGBA with 40% opacity (102/255)
+            overlay_draw.ellipse([
+                mouse_x - circle_radius, mouse_y - circle_radius,
+                mouse_x + circle_radius, mouse_y + circle_radius
+            ], fill=inner_color)
+            
+            # Composite the overlay with the screenshot
+            screenshot = screenshot.convert('RGBA')
+            screenshot = Image.alpha_composite(screenshot, overlay)
+            screenshot = screenshot.convert('RGB')
+            
+            # Draw outer circle outline on top
+            draw = ImageDraw.Draw(screenshot)
             draw.ellipse([
                 mouse_x - circle_radius, mouse_y - circle_radius,
                 mouse_x + circle_radius, mouse_y + circle_radius
