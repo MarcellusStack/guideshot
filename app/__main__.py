@@ -55,7 +55,7 @@ class GuideShot(QMainWindow):
         layout.addWidget(title_label)
         
         # Add version number directly under title
-        version_label = QLabel("v0.1")
+        version_label = QLabel("v0.2")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("""
             QLabel {
@@ -115,10 +115,11 @@ class GuideShot(QMainWindow):
         self.start_button = QPushButton("Start Capturing")
         self.stop_button = QPushButton("Stop Capturing")
         self.set_key_button = QPushButton("Settings")
+        self.show_guides_button = QPushButton("Show Guides")
         self.close_button = QPushButton("Close")
         
         # Apply styling to buttons
-        for button in [self.start_button, self.stop_button, self.set_key_button, self.close_button]:
+        for button in [self.start_button, self.stop_button, self.set_key_button, self.show_guides_button, self.close_button]:
             button.setStyleSheet(button_style)
             button.setMinimumHeight(35)  # Made buttons shorter
             button.setMaximumHeight(35)  # Ensure consistent height
@@ -148,12 +149,14 @@ class GuideShot(QMainWindow):
         layout.addWidget(self.start_button, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.stop_button, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.set_key_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.show_guides_button, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addSpacing(10)  # Reduced space before close button
         layout.addWidget(self.close_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
         # Connect buttons
         self.close_button.clicked.connect(self.close)
         self.set_key_button.clicked.connect(self.open_key_settings)
+        self.show_guides_button.clicked.connect(self.show_guides)
         self.start_button.clicked.connect(self.start_recording)
         self.stop_button.clicked.connect(self.stop_recording)
         
@@ -314,6 +317,12 @@ class GuideShot(QMainWindow):
         if dialog.exec() == QDialog.Accepted:
             # Reload settings after dialog closes
             self.settings = self.settings_manager.load_settings()
+    
+    def show_guides(self):
+        """Open the guides window"""
+        from app.dialogs import GuidesWindow
+        guides_window = GuidesWindow(self)
+        guides_window.show()
     
     def closeEvent(self, event):
         if self.recorder.is_recording:

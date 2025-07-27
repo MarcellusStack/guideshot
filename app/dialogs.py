@@ -1,9 +1,11 @@
 from PySide6.QtWidgets import (
     QDialog, QLabel, QPushButton, QVBoxLayout, QCheckBox, 
-    QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox
+    QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox,
+    QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
+from pathlib import Path
 from app.settings import SettingsManager
 
 class KeyCaptureDialog(QDialog):
@@ -313,4 +315,266 @@ class GuideInfoDialog(QDialog):
         return {
             'name': self.name_input.text().strip(),
             'caption': self.caption_input.toPlainText().strip()
-        } 
+        }
+
+class GuidesWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("GuideShot - My Guides")
+        self.setGeometry(200, 200, 800, 600)
+        self.setMinimumSize(600, 400)
+        
+        # Setup UI
+        self.setup_ui()
+        self.load_guides()
+    
+    def setup_ui(self):
+        """Setup the guides window UI"""
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Title
+        title_label = QLabel("My Guides")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 10px;
+            }
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # Description
+        desc_label = QLabel("Click 'Open Folder' to view your guide files (images, PDFs, videos)")
+        desc_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #7f8c8d;
+                margin-bottom: 15px;
+            }
+        """)
+        desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(desc_label)
+        
+        # Guides list
+        self.guides_list = QListWidget()
+        self.guides_list.setStyleSheet("""
+            QListWidget {
+                border: 2px solid #bdc3c7;
+                border-radius: 6px;
+                background-color: white;
+                padding: 5px;
+            }
+            QListWidget::item {
+                border-bottom: 1px solid #ecf0f1;
+                padding: 10px;
+                margin: 2px;
+            }
+            QListWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #ecf0f1;
+            }
+        """)
+        layout.addWidget(self.guides_list)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        self.refresh_button = QPushButton("Refresh")
+        self.refresh_button.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                padding: 8px 16px;
+                border: 2px solid #3498db;
+                border-radius: 4px;
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+                border-color: #2980b9;
+            }
+        """)
+        
+        self.close_button = QPushButton("Close")
+        self.close_button.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                padding: 8px 16px;
+                border: 2px solid #e74c3c;
+                border-radius: 4px;
+                background-color: #e74c3c;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+                border-color: #c0392b;
+            }
+        """)
+        
+        button_layout.addWidget(self.refresh_button)
+        button_layout.addStretch()
+        button_layout.addWidget(self.close_button)
+        layout.addLayout(button_layout)
+        
+        # Connect buttons
+        self.refresh_button.clicked.connect(self.load_guides)
+        self.close_button.clicked.connect(self.close)
+    
+    def load_guides(self):
+        """Load and display all guides from the guides folder"""
+        self.guides_list.clear()
+        
+        try:
+            guides_folder = Path("guides")
+            if not guides_folder.exists():
+                # Create empty state
+                item = QListWidgetItem("No guides found. Create your first guide!")
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+                item.setStyleSheet("color: #7f8c8d; font-style: italic;")
+                self.guides_list.addItem(item)
+                return
+            
+            # Get all guide folders
+            guide_folders = [f for f in guides_folder.iterdir() if f.is_dir()]
+            
+            if not guide_folders:
+                # Create empty state
+                item = QListWidgetItem("No guides found. Create your first guide!")
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+                item.setStyleSheet("color: #7f8c8d; font-style: italic;")
+                self.guides_list.addItem(item)
+                return
+            
+            # Sort folders by creation time (newest first)
+            guide_folders.sort(key=lambda x: x.stat().st_ctime, reverse=True)
+            
+            for folder in guide_folders:
+                self.add_guide_item(folder)
+                
+        except Exception as e:
+            print(f"Error loading guides: {e}")
+            item = QListWidgetItem("Error loading guides")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            item.setStyleSheet("color: #e74c3c; font-style: italic;")
+            self.guides_list.addItem(item)
+    
+    def add_guide_item(self, folder_path):
+        """Add a guide item to the list"""
+        # Create custom widget for the guide item
+        item_widget = QWidget()
+        item_widget.setMinimumHeight(80)  # Set minimum height for the widget
+        item_layout = QHBoxLayout(item_widget)
+        item_layout.setContentsMargins(10, 15, 10, 15)  # Increased vertical padding
+        item_layout.setSpacing(10)
+        
+        # Guide info
+        info_layout = QVBoxLayout()
+        
+        # Guide name (folder name without timestamp)
+        folder_name = folder_path.name
+        # Try to extract the guide name (before the timestamp)
+        if '_' in folder_name:
+            # Split by underscore and take the first part as guide name
+            guide_name = folder_name.split('_')[0]
+            # Replace underscores with spaces and capitalize
+            guide_name = ' '.join(word.capitalize() for word in guide_name.split('_'))
+        else:
+            guide_name = folder_name.replace('_', ' ').title()
+        
+        name_label = QLabel(guide_name)
+        name_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 2px;
+            }
+        """)
+        info_layout.addWidget(name_label)
+        
+        # Folder path and file count
+        screenshot_count = len(list(folder_path.glob("*.png")))
+        pdf_exists = any(folder_path.glob("*.pdf"))
+        video_exists = any(folder_path.glob("*.mp4"))
+        
+        details = f"📁 {folder_name} • 📸 {screenshot_count} images"
+        if pdf_exists:
+            details += " • 📄 PDF"
+        if video_exists:
+            details += " • 🎥 Video"
+        
+        details_label = QLabel(details)
+        details_label.setStyleSheet("""
+            QLabel {
+                font-size: 11px;
+                color: #7f8c8d;
+            }
+        """)
+        info_layout.addWidget(details_label)
+        
+        item_layout.addLayout(info_layout)
+        item_layout.addStretch()
+        
+        # Open folder button
+        open_button = QPushButton("Open Folder")
+        open_button.setMinimumHeight(30)  # Ensure button has proper height
+        open_button.setStyleSheet("""
+            QPushButton {
+                font-size: 11px;
+                padding: 8px 16px;
+                border: 1px solid #3498db;
+                border-radius: 3px;
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+                border-color: #2980b9;
+            }
+        """)
+        open_button.clicked.connect(lambda: self.open_guide_folder(folder_path))
+        item_layout.addWidget(open_button)
+        
+        # Create list item and set the custom widget
+        item = QListWidgetItem()
+        # Force a larger size hint to ensure full visibility
+        size_hint = item_widget.sizeHint()
+        size_hint.setHeight(max(80, size_hint.height()))  # Ensure minimum 80px height
+        item.setSizeHint(size_hint)
+        self.guides_list.addItem(item)
+        self.guides_list.setItemWidget(item, item_widget)
+    
+    def open_guide_folder(self, folder_path):
+        """Open the guide folder in the file explorer"""
+        try:
+            import subprocess
+            import platform
+            
+            if platform.system() == "Windows":
+                # Windows explorer returns non-zero exit code even when successful
+                # So we don't use check=True and handle the result manually
+                result = subprocess.run(["explorer", str(folder_path)], capture_output=True, text=True)
+                if result.returncode != 0 and result.stderr:
+                    # Only show error if there's actual stderr content
+                    raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+            elif platform.system() == "Darwin":  # macOS
+                subprocess.run(["open", str(folder_path)], check=True)
+            else:  # Linux
+                subprocess.run(["xdg-open", str(folder_path)], check=True)
+                
+            print(f"Opened guide folder: {folder_path}")
+            
+        except Exception as e:
+            print(f"Error opening folder: {e}")
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}") 
