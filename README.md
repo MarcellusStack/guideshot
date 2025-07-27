@@ -8,8 +8,8 @@ Create engaging screenshot tutorials with optional video and pdf export. GuideSh
 - 🎤 Voice narration synchronization
 - 🎬 Automatic video generation
 - 💻 Simple and intuitive interface
-- 📁 Take Screenshots in a folder
-- 🏷️ Set custom name for folder screenshot (important for later)
+- 📁 Take Guides in a folder
+- 🏷️ Set custom name for folder guides (important for later)
 - 📄 Create optional PDF
 - 🎯 Set optional size of circle and color for screenshot
 - 🖱️ Optional mouse click

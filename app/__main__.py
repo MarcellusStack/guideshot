@@ -195,7 +195,7 @@ class GuideShot(QMainWindow):
             f"Screenshot Key: {self.settings.get('screenshot_key', 'Space')}\n"
             f"Stop Key: {self.settings.get('stop_key', 'Esc')}\n"
             f"Mouse clicks: {mouse_status}\n\n"
-            f"Screenshots will be saved in: {session_folder}\n\n"
+                            f"Guides will be saved in: {session_folder}\n\n"
             f"The window will be minimized.")
     
     def clean_session_name(self, name):
@@ -232,7 +232,7 @@ class GuideShot(QMainWindow):
         
         # Show summary
         try:
-            print(f"Recording stopped via hotkey. Screenshots taken: {screenshot_count}")
+            print(f"Recording stopped via hotkey. Guides taken: {screenshot_count}")
             
             # Check if PDF was created
             pdf_status = ""
@@ -254,7 +254,7 @@ class GuideShot(QMainWindow):
             
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
-                f"Screenshots taken: {screenshot_count}\n"
+                f"Guides taken: {screenshot_count}\n"
                 f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
         except Exception as e:
             print(f"Error showing summary: {e}")
@@ -281,7 +281,7 @@ class GuideShot(QMainWindow):
         
         # Show summary
         try:
-            print(f"Recording stopped via button. Screenshots taken: {screenshot_count}")
+            print(f"Recording stopped via button. Guides taken: {screenshot_count}")
             
             # Check if PDF was created
             pdf_status = ""
@@ -303,7 +303,7 @@ class GuideShot(QMainWindow):
             
             QMessageBox.information(None, "Recording Stopped", 
                 f"Recording stopped!\n\n"
-                f"Screenshots taken: {screenshot_count}\n"
+                f"Guides taken: {screenshot_count}\n"
                 f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
         except Exception as e:
             print(f"Error showing summary: {str(e)}")

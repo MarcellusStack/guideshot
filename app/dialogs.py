@@ -65,7 +65,7 @@ class KeySettingsDialog(QDialog):
         layout.addWidget(self.set_screenshot_key_btn)
         
         # Add mouse click checkbox
-        self.mouse_click_checkbox = QCheckBox("Enable mouse click for screenshots")
+        self.mouse_click_checkbox = QCheckBox("Enable mouse click for guides")
         self.mouse_click_checkbox.setChecked(self.settings.get('mouse_click_enabled', False))
         layout.addWidget(self.mouse_click_checkbox)
         
@@ -93,12 +93,12 @@ class KeySettingsDialog(QDialog):
         layout.addLayout(circle_color_layout)
         
         # Add PDF creation checkbox
-        self.pdf_checkbox = QCheckBox("Create PDF from screenshots after session")
+        self.pdf_checkbox = QCheckBox("Create PDF from guides after session")
         self.pdf_checkbox.setChecked(self.settings.get('create_pdf', False))
         layout.addWidget(self.pdf_checkbox)
         
         # Add video creation checkbox
-        self.video_checkbox = QCheckBox("Create video from screenshots after session")
+        self.video_checkbox = QCheckBox("Create video from guides after session")
         self.video_checkbox.setChecked(self.settings.get('create_video', False))
         layout.addWidget(self.video_checkbox)
         

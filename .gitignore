@@ -1,5 +1,5 @@
 venv/
-screenshots/
+guides/
 app/__pycache__
 settings.json
 build/

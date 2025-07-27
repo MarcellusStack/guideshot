@@ -15,7 +15,7 @@ class ScreenshotRecorder(QObject):
     def __init__(self):
         super().__init__()
         self.is_recording = False
-        self.screenshots_folder = Path("screenshots")
+        self.screenshots_folder = Path("guides")
         self.screenshots_folder.mkdir(exist_ok=True)
         self.current_session_folder = None
         
@@ -29,7 +29,7 @@ class ScreenshotRecorder(QObject):
         self.mouse_listener = None
     
     def create_session_folder(self, session_name=None):
-        """Create a new session folder for screenshots"""
+        """Create a new session folder for guides"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         if session_name:
@@ -242,21 +242,21 @@ class ScreenshotRecorder(QObject):
         # Cleanup mouse detection
         self.cleanup_mouse_detection()
         
-        # Count screenshots
+        # Count guides
         screenshot_count = len(list(self.current_session_folder.glob("*.png"))) if self.current_session_folder else 0
         
         # Create PDF if enabled
         if self.settings.get('create_pdf', False) and screenshot_count > 0:
             try:
                 print("PDF creation is enabled, attempting to create PDF...")
-                pdf_path = self.create_pdf_from_screenshots()
+                pdf_path = self.create_pdf_from_guides()
                 print(f"PDF created successfully: {pdf_path}")
             except Exception as e:
                 print(f"Error creating PDF: {e}")
                 import traceback
                 traceback.print_exc()
         elif self.settings.get('create_pdf', False):
-            print("PDF creation enabled but no screenshots found")
+                            print("PDF creation enabled but no guides found")
         else:
             print("PDF creation disabled in settings")
         
@@ -264,14 +264,14 @@ class ScreenshotRecorder(QObject):
         if self.settings.get('create_video', False) and screenshot_count > 0:
             try:
                 print("Video creation is enabled, attempting to create video...")
-                video_path = self.create_video_from_screenshots()
+                video_path = self.create_video_from_guides()
                 print(f"Video created successfully: {video_path}")
             except Exception as e:
                 print(f"Error creating video: {e}")
                 import traceback
                 traceback.print_exc()
         elif self.settings.get('create_video', False):
-            print("Video creation enabled but no screenshots found")
+                            print("Video creation enabled but no guides found")
         else:
             print("Video creation disabled in settings")
         
@@ -295,8 +295,8 @@ class ScreenshotRecorder(QObject):
         except Exception as e:
             print(f"Error stopping mouse timer: {e}")
     
-    def create_pdf_from_screenshots(self):
-        """Create a PDF from all screenshots in the session folder"""
+    def create_pdf_from_guides(self):
+        """Create a PDF from all guides in the session folder"""
         print(f"Starting PDF creation...")
         print(f"Session folder: {self.current_session_folder}")
         
@@ -308,9 +308,9 @@ class ScreenshotRecorder(QObject):
         print(f"Found {len(screenshot_files)} PNG files")
         
         if not screenshot_files:
-            raise Exception("No screenshots found in session folder")
+            raise Exception("No guides found in session folder")
         
-        print(f"Creating PDF from {len(screenshot_files)} screenshots...")
+        print(f"Creating PDF from {len(screenshot_files)} guides...")
         
         try:
             print("Importing reportlab...")
@@ -418,8 +418,8 @@ class ScreenshotRecorder(QObject):
             except ImportError:
                 raise Exception("PDF creation requires 'reportlab' or 'img2pdf' package. Install with: pip install reportlab")
     
-    def create_video_from_screenshots(self):
-        """Create a video from all screenshots in the session folder"""
+    def create_video_from_guides(self):
+        """Create a video from all guides in the session folder"""
         print(f"Starting video creation...")
         print(f"Session folder: {self.current_session_folder}")
         
@@ -431,9 +431,9 @@ class ScreenshotRecorder(QObject):
         print(f"Found {len(screenshot_files)} PNG files")
         
         if not screenshot_files:
-            raise Exception("No screenshots found in session folder")
+            raise Exception("No guides found in session folder")
         
-        print(f"Creating video from {len(screenshot_files)} screenshots...")
+        print(f"Creating video from {len(screenshot_files)} guides...")
         
         try:
             print("Importing moviepy...")
@@ -494,7 +494,7 @@ class ScreenshotRecorder(QObject):
                     ).with_position(('center', video_height * 0.6)).with_start(0).with_duration(title_duration)
                     title_clips.append(caption_text)
                 
-                # Video length info
+                # Video length infochange screenshot folder name to guides and also in the complete code
                 total_duration = len(screenshot_files) * duration
                 length_text = f"Total Steps: {len(screenshot_files)} | Duration: {total_duration:.1f}s"
                 length_clip = TextClip(
@@ -516,7 +516,7 @@ class ScreenshotRecorder(QObject):
             
             # Concatenate all clips
             if len(clips_to_concatenate) > 1:
-                print("Combining title scene with screenshots...")
+                print("Combining title scene with guides...")
                 final_clip = concatenate_videoclips(clips_to_concatenate)
             else:
                 final_clip = clips_to_concatenate[0]
