@@ -225,34 +225,8 @@ class GuideShot(QMainWindow):
         self.showNormal()
         self.activateWindow()
         
-        # Show summary
-        try:
-            print(f"Recording stopped via hotkey. Guides taken: {screenshot_count}")
-            
-            # Check if PDF was created
-            pdf_status = ""
-            if self.settings.get('create_pdf', False):
-                pdf_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.pdf"
-                if pdf_file.exists():
-                    pdf_status = f"\nPDF created: {pdf_file.name}"
-                else:
-                    pdf_status = "\nPDF creation failed"
-            
-            # Check if video was created
-            video_status = ""
-            if self.settings.get('create_video', False):
-                video_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.mp4"
-                if video_file.exists():
-                    video_status = f"\nVideo created: {video_file.name}"
-                else:
-                    video_status = "\nVideo creation failed"
-            
-            QMessageBox.information(None, "Recording Stopped", 
-                f"Recording stopped!\n\n"
-                f"Guides taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
-        except Exception as e:
-            print(f"Error showing summary: {e}")
+        # Show branding image immediately after stopping
+        self.show_branding_image_stopped(screenshot_count)
     
     def stop_recording(self):
         """Called when stop button is pressed"""
@@ -277,35 +251,8 @@ class GuideShot(QMainWindow):
         self.showNormal()
         self.activateWindow()
         
-        # Show summary
-        try:
-            print(f"Recording stopped via button. Guides taken: {screenshot_count}")
-            
-            # Check if PDF was created
-            pdf_status = ""
-            if self.settings.get('create_pdf', False):
-                pdf_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.pdf"
-                if pdf_file.exists():
-                    pdf_status = f"\nPDF created: {pdf_file.name}"
-                else:
-                    pdf_status = "\nPDF creation failed"
-            
-            # Check if video was created
-            video_status = ""
-            if self.settings.get('create_video', False):
-                video_file = self.recorder.current_session_folder / f"{self.recorder.current_session_folder.name}.mp4"
-                if video_file.exists():
-                    video_status = f"\nVideo created: {video_file.name}"
-                else:
-                    video_status = "\nVideo creation failed"
-            
-            QMessageBox.information(None, "Recording Stopped", 
-                f"Recording stopped!\n\n"
-                f"Guides taken: {screenshot_count}\n"
-                f"Saved in: {self.recorder.current_session_folder}{pdf_status}{video_status}")
-        except Exception as e:
-            print(f"Error showing summary: {str(e)}")
-            QMessageBox.warning(None, "Error", "Recording stopped, but there was an error showing the summary.")
+        # Show branding image immediately after stopping
+        self.show_branding_image_stopped(screenshot_count)
     
     def open_key_settings(self):
         dialog = KeySettingsDialog(self)
@@ -363,6 +310,227 @@ class GuideShot(QMainWindow):
         if hasattr(self, 'recording_overlay') and self.recording_overlay:
             self.recording_overlay.close()
             self.recording_overlay = None
+    
+    def show_branding_image(self):
+        """Show the branding image immediately when guide is saved"""
+        try:
+            branding_path = Path("assets/branding.png")
+            if branding_path.exists():
+                # Create a simple dialog to show the branding image
+                from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel
+                from PySide6.QtCore import Qt
+                
+                branding_dialog = QDialog(self)
+                branding_dialog.setWindowTitle("GuideShot - Guide Saved")
+                branding_dialog.setFixedSize(300, 350)
+                branding_dialog.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Window | Qt.WindowType.Tool)
+                
+                # Center the dialog
+                screen = branding_dialog.screen()
+                screen_geometry = screen.geometry()
+                x = (screen_geometry.width() - branding_dialog.width()) // 2
+                y = (screen_geometry.height() - branding_dialog.height()) // 2
+                branding_dialog.move(x, y)
+                
+                layout = QVBoxLayout(branding_dialog)
+                layout.setContentsMargins(20, 20, 20, 20)
+                
+                # Add success message
+                success_label = QLabel("✅ Guide Saved Successfully!")
+                success_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #27ae60;
+                        margin-bottom: 10px;
+                    }
+                """)
+                success_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                layout.addWidget(success_label)
+                
+                # Add branding image
+                branding_label = QLabel()
+                pixmap = QPixmap(str(branding_path))
+                scaled_pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                branding_label.setPixmap(scaled_pixmap)
+                branding_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                branding_label.setFixedSize(200, 200)
+                layout.addWidget(branding_label)
+                
+                # Add instruction text
+                instruction_label = QLabel("You can now start taking screenshots!\nPress SPACE to capture.")
+                instruction_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 12px;
+                        color: #7f8c8d;
+                        margin-top: 10px;
+                    }
+                """)
+                instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                layout.addWidget(instruction_label)
+                
+                # Auto-close after 3 seconds
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(3000, branding_dialog.close)
+                
+                branding_dialog.show()
+                
+        except Exception as e:
+            print(f"Error showing branding image: {e}")
+    
+    def show_branding_image_stopped(self, screenshot_count):
+        """Show the branding image when recording is stopped, then start processing"""
+        try:
+            branding_path = Path("assets/branding.png")
+            if branding_path.exists():
+                # Create a dialog to show the branding image with processing info
+                from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+                from PySide6.QtCore import Qt
+                
+                branding_dialog = QDialog(self)
+                branding_dialog.setWindowTitle("GuideShot - Recording Complete")
+                branding_dialog.setFixedSize(350, 250)
+                branding_dialog.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Window | Qt.WindowType.Tool)
+                
+                # Center the dialog
+                screen = branding_dialog.screen()
+                screen_geometry = screen.geometry()
+                x = (screen_geometry.width() - branding_dialog.width()) // 2
+                y = (screen_geometry.height() - branding_dialog.height()) // 2
+                branding_dialog.move(x, y)
+                
+                layout = QVBoxLayout(branding_dialog)
+                layout.setContentsMargins(20, 20, 20, 20)
+                
+                # Add completion message
+                completion_label = QLabel("✅ Recording Complete!")
+                completion_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #27ae60;
+                        margin-bottom: 10px;
+                    }
+                """)
+                completion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                layout.addWidget(completion_label)
+                
+                # Add screenshot count
+                count_label = QLabel(f"📸 {screenshot_count} screenshots captured")
+                count_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 14px;
+                        color: #7f8c8d;
+                        margin-bottom: 15px;
+                    }
+                """)
+                count_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                layout.addWidget(count_label)
+                
+                # Add processing message
+                processing_label = QLabel("Processing your guide...")
+                processing_label.setObjectName("processing_label")  # Set object name for finding
+                processing_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 12px;
+                        color: #3498db;
+                        margin-top: 10px;
+                    }
+                """)
+                processing_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                layout.addWidget(processing_label)
+                
+                # Keep this dialog open and start processing in background
+                from PySide6.QtCore import QTimer
+                def start_processing():
+                    # Update the dialog to show processing status
+                    processing_label.setText("Creating PDF and video...")
+                    processing_label.setStyleSheet("""
+                        QLabel {
+                            font-size: 12px;
+                            color: #3498db;
+                            margin-top: 10px;
+                        }
+                    """)
+                    
+                    # Start processing in background
+                    self.start_background_processing(screenshot_count, branding_dialog)
+                
+                QTimer.singleShot(2000, start_processing)
+                
+                branding_dialog.show()
+                
+        except Exception as e:
+            print(f"Error showing branding image: {e}")
+            # Fallback to processing dialog
+            self.show_processing_dialog(screenshot_count)
+    
+    def start_background_processing(self, screenshot_count, branding_dialog):
+        """Start processing in background and update the branding dialog"""
+        try:
+            from app.recorder import ScreenshotRecorder
+            
+            # Create recorder instance for processing
+            recorder = ScreenshotRecorder()
+            recorder.current_session_folder = self.recorder.current_session_folder
+            recorder.settings = self.settings
+            recorder.guide_info = self.recorder.guide_info
+            
+            # Process PDF if enabled
+            if self.settings.get('create_pdf', False) and screenshot_count > 0:
+                try:
+                    branding_dialog.findChild(QLabel, "processing_label").setText("Creating PDF...")
+                    pdf_path = recorder.create_pdf_from_guides()
+                    branding_dialog.findChild(QLabel, "processing_label").setText("PDF created successfully!")
+                except Exception as e:
+                    branding_dialog.findChild(QLabel, "processing_label").setText(f"PDF creation failed: {str(e)}")
+                    print(f"Error creating PDF: {e}")
+            
+            # Process video if enabled
+            if self.settings.get('create_video', False) and screenshot_count > 0:
+                try:
+                    branding_dialog.findChild(QLabel, "processing_label").setText("Creating video...")
+                    video_path = recorder.create_video_from_guides()
+                    branding_dialog.findChild(QLabel, "processing_label").setText("Video created successfully!")
+                except Exception as e:
+                    branding_dialog.findChild(QLabel, "processing_label").setText(f"Video creation failed: {str(e)}")
+                    print(f"Error creating video: {e}")
+            
+            # Show completion message
+            branding_dialog.findChild(QLabel, "processing_label").setText("✅ All processing completed!")
+            branding_dialog.findChild(QLabel, "processing_label").setStyleSheet("""
+                QLabel {
+                    font-size: 12px;
+                    color: #27ae60;
+                    margin-top: 10px;
+                }
+            """)
+            
+            # Close dialog after 2 seconds
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(2000, branding_dialog.close)
+            
+        except Exception as e:
+            print(f"Error in background processing: {e}")
+            branding_dialog.findChild(QLabel, "processing_label").setText(f"Processing error: {str(e)}")
+            # Close dialog after 3 seconds on error
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(3000, branding_dialog.close)
+    
+    def show_processing_dialog(self, screenshot_count):
+        """Show processing dialog while creating PDF/video"""
+        from app.dialogs import ProcessingDialog
+        self.processing_dialog = ProcessingDialog(screenshot_count, self.recorder.current_session_folder, self.settings, self.recorder.guide_info)
+        self.processing_dialog.set_processing_finished_callback(self.on_processing_finished)
+        self.processing_dialog.show()
+    
+    def on_processing_finished(self, success, message):
+        """Called when processing is finished"""
+        if success:
+            print(f"Processing completed successfully: {message}")
+        else:
+            print(f"Processing failed: {message}")
+            QMessageBox.warning(None, "Processing Error", f"Error during processing:\n{message}")
     
     def closeEvent(self, event):
         if self.recorder.is_recording:
