@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QDialog, QLabel, QPushButton, QVBoxLayout, QCheckBox, 
     QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox,
-    QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame, QProgressBar
+    QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame, QProgressBar, QComboBox
 )
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor
@@ -137,6 +137,84 @@ class KeySettingsDialog(QDialog):
         # Connect checkbox to enable/disable text input
         self.helper_text_checkbox.toggled.connect(self.helper_text_input.setEnabled)
         
+        # Add voice recording settings
+        voice_section_label = QLabel("Voice Recording Settings:")
+        voice_section_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+        """)
+        layout.addWidget(voice_section_label)
+        
+        # Voice recording checkbox
+        self.voice_checkbox = QCheckBox("Enable voice recording per screenshot")
+        self.voice_checkbox.setChecked(self.settings.get('voice_enabled', False))
+        layout.addWidget(self.voice_checkbox)
+        
+        # Voice recording key
+        voice_key_layout = QHBoxLayout()
+        voice_key_label = QLabel("Voice Recording Key:")
+        self.voice_key_button = QPushButton(f"Current: {self.settings.get('voice_key', 'v')}")
+        self.voice_key_button.setStyleSheet("""
+            QPushButton {
+                padding: 5px 10px;
+                border: 1px solid #3498db;
+                border-radius: 3px;
+                background-color: #ecf0f1;
+            }
+            QPushButton:hover {
+                background-color: #bdc3c7;
+            }
+        """)
+        self.voice_key_button.setEnabled(self.settings.get('voice_enabled', False))
+        voice_key_layout.addWidget(voice_key_label)
+        voice_key_layout.addWidget(self.voice_key_button)
+        voice_key_layout.addStretch()
+        layout.addLayout(voice_key_layout)
+        
+        # Speech-to-text checkbox
+        self.speech_to_text_checkbox = QCheckBox("Convert speech to text (PDF captions)")
+        self.speech_to_text_checkbox.setChecked(self.settings.get('speech_to_text', True))
+        self.speech_to_text_checkbox.setEnabled(self.settings.get('voice_enabled', False))
+        layout.addWidget(self.speech_to_text_checkbox)
+        
+        # Text-to-speech checkbox
+        self.text_to_speech_checkbox = QCheckBox("Generate AI voice for video")
+        self.text_to_speech_checkbox.setChecked(self.settings.get('text_to_speech', True))
+        self.text_to_speech_checkbox.setEnabled(self.settings.get('voice_enabled', False))
+        layout.addWidget(self.text_to_speech_checkbox)
+        
+        # TTS Voice selection
+        tts_voice_layout = QHBoxLayout()
+        tts_voice_label = QLabel("AI Voice:")
+        self.tts_voice_combo = QComboBox()
+        self.tts_voice_combo.addItems(["Default", "Google TTS", "Windows SAPI"])
+        current_voice = self.settings.get('tts_voice', 'default')
+        voice_index = {'default': 0, 'google': 1, 'windows': 2}.get(current_voice, 0)
+        self.tts_voice_combo.setCurrentIndex(voice_index)
+        self.tts_voice_combo.setEnabled(self.settings.get('voice_enabled', False) and self.settings.get('text_to_speech', True))
+        tts_voice_layout.addWidget(tts_voice_label)
+        tts_voice_layout.addWidget(self.tts_voice_combo)
+        tts_voice_layout.addStretch()
+        layout.addLayout(tts_voice_layout)
+        
+        # Voice Language selection
+        language_layout = QHBoxLayout()
+        language_label = QLabel("Voice Language:")
+        self.voice_language_combo = QComboBox()
+        self.voice_language_combo.addItems(["German", "English"])
+        current_language = self.settings.get('voice_language', 'de')
+        self.voice_language_combo.setCurrentText("German" if current_language == 'de' else "English")
+        self.voice_language_combo.setEnabled(self.settings.get('voice_enabled', False))
+        language_layout.addWidget(language_label)
+        language_layout.addWidget(self.voice_language_combo)
+        language_layout.addStretch()
+        layout.addLayout(language_layout)
+        
         # Add close button
         self.close_btn = QPushButton("Close")
         layout.addWidget(self.close_btn)
@@ -156,6 +234,12 @@ class KeySettingsDialog(QDialog):
         self.duration_spinbox.valueChanged.connect(self.update_screenshot_duration)
         self.helper_text_checkbox.toggled.connect(self.toggle_helper_text)
         self.helper_text_input.textChanged.connect(self.update_helper_text)
+        self.voice_checkbox.toggled.connect(self.toggle_voice_recording)
+        self.voice_key_button.clicked.connect(lambda: self.set_key('voice_key'))
+        self.speech_to_text_checkbox.toggled.connect(self.toggle_speech_to_text)
+        self.text_to_speech_checkbox.toggled.connect(self.toggle_text_to_speech)
+        self.tts_voice_combo.currentTextChanged.connect(self.update_tts_voice)
+        self.voice_language_combo.currentTextChanged.connect(self.update_voice_language)
         self.close_btn.clicked.connect(self.accept)
         
     def toggle_mouse_click(self, checked):
@@ -223,6 +307,59 @@ class KeySettingsDialog(QDialog):
         self.settings_manager.save_settings(self.settings)
         print(f"Helper text updated to: '{text}'")
     
+    def toggle_voice_recording(self, checked):
+        """Toggle voice recording setting"""
+        self.settings['voice_enabled'] = checked
+        self.settings_manager.save_settings(self.settings)
+        
+        # Enable/disable related controls
+        self.voice_key_button.setEnabled(checked)
+        self.speech_to_text_checkbox.setEnabled(checked)
+        self.text_to_speech_checkbox.setEnabled(checked)
+        self.tts_voice_combo.setEnabled(checked and self.text_to_speech_checkbox.isChecked())
+        self.voice_language_combo.setEnabled(checked)
+        
+        print(f"Voice recording {'enabled' if checked else 'disabled'}")
+    
+    def toggle_speech_to_text(self, checked):
+        """Toggle speech-to-text setting"""
+        self.settings['speech_to_text'] = checked
+        self.settings_manager.save_settings(self.settings)
+        print(f"Speech-to-text {'enabled' if checked else 'disabled'}")
+    
+    def toggle_text_to_speech(self, checked):
+        """Toggle text-to-speech setting"""
+        self.settings['text_to_speech'] = checked
+        self.settings_manager.save_settings(self.settings)
+        
+        # Enable/disable TTS voice selection
+        self.tts_voice_combo.setEnabled(checked and self.voice_checkbox.isChecked())
+        
+        print(f"Text-to-speech {'enabled' if checked else 'disabled'}")
+    
+    def update_tts_voice(self, voice_text):
+        """Update TTS voice setting"""
+        voice_mapping = {
+            "Default": "default",
+            "Google TTS": "google", 
+            "Windows SAPI": "windows"
+        }
+        voice_key = voice_mapping.get(voice_text, "default")
+        self.settings['tts_voice'] = voice_key
+        self.settings_manager.save_settings(self.settings)
+        print(f"TTS voice updated to: {voice_text}")
+    
+    def update_voice_language(self, language_text):
+        """Update voice language setting"""
+        language_mapping = {
+            "German": "de",
+            "English": "en"
+        }
+        language_key = language_mapping.get(language_text, "de")
+        self.settings['voice_language'] = language_key
+        self.settings_manager.save_settings(self.settings)
+        print(f"Voice language updated to: {language_text} ({language_key})")
+    
     def set_key(self, key_type):
         dialog = KeyCaptureDialog(key_type, self)
         if dialog.exec() == QDialog.Accepted and dialog.selected_key:
@@ -233,8 +370,10 @@ class KeySettingsDialog(QDialog):
             # Update label
             if key_type == 'stop_key':
                 self.stop_key_label.setText(f"Current Stop Key: {dialog.selected_key}")
-            else:
-                self.screenshot_key_label.setText(f"Current Screenshot Key: {dialog.selected_key}") 
+            elif key_type == 'screenshot_key':
+                self.screenshot_key_label.setText(f"Current Screenshot Key: {dialog.selected_key}")
+            elif key_type == 'voice_key':
+                self.voice_key_button.setText(f"Current: {dialog.selected_key}") 
 
 class GuideInfoDialog(QDialog):
     def __init__(self, parent=None):

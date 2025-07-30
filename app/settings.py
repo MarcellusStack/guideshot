@@ -14,7 +14,13 @@ class SettingsManager:
             'create_video': False,  # Create video from guides
             'screenshot_duration': 2.0,  # Duration in seconds each screenshot is shown in video
             'helper_text_enabled': False,  # Enable helper text under circle
-            'helper_text': 'Click here'  # Default helper text
+            'helper_text': 'Click here',  # Default helper text
+            'voice_enabled': False,  # Enable voice recording per screenshot
+            'voice_key': 'v',  # Key to hold for voice recording  
+            'speech_to_text': True,  # Convert speech to text for PDF captions
+            'text_to_speech': True,  # Generate TTS audio for video
+            'tts_voice': 'default',  # TTS voice selection (default, google, windows)
+            'voice_language': 'de'  # Voice language (de=German, en=English)
         }
     
     def load_settings(self):
