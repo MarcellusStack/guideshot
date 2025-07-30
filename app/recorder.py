@@ -358,35 +358,9 @@ class ScreenshotRecorder(QObject):
         # Count guides
         screenshot_count = len(list(self.current_session_folder.glob("*.png"))) if self.current_session_folder else 0
         
-        # Create PDF if enabled
-        if self.settings.get('create_pdf', False) and screenshot_count > 0:
-            try:
-                print("PDF creation is enabled, attempting to create PDF...")
-                pdf_path = self.create_pdf_from_guides()
-                print(f"PDF created successfully: {pdf_path}")
-            except Exception as e:
-                print(f"Error creating PDF: {e}")
-                import traceback
-                traceback.print_exc()
-        elif self.settings.get('create_pdf', False):
-                            print("PDF creation enabled but no guides found")
-        else:
-            print("PDF creation disabled in settings")
-        
-        # Create video if enabled
-        if self.settings.get('create_video', False) and screenshot_count > 0:
-            try:
-                print("Video creation is enabled, attempting to create video...")
-                video_path = self.create_video_from_guides()
-                print(f"Video created successfully: {video_path}")
-            except Exception as e:
-                print(f"Error creating video: {e}")
-                import traceback
-                traceback.print_exc()
-        elif self.settings.get('create_video', False):
-                            print("Video creation enabled but no guides found")
-        else:
-            print("Video creation disabled in settings")
+        # PDF and video creation will be handled by the processing dialog
+        # to avoid double creation and provide better user feedback
+        print("Recording stopped. PDF/video creation will be handled by processing dialog.")
         
         return screenshot_count
     

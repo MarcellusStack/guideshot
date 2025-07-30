@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
     QDialog, QLabel, QPushButton, QVBoxLayout, QCheckBox, 
     QHBoxLayout, QSpinBox, QColorDialog, QLineEdit, QTextEdit, QDoubleSpinBox,
-    QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame
+    QListWidget, QListWidgetItem, QScrollArea, QWidget, QFrame, QProgressBar
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor
 from pathlib import Path
 from app.settings import SettingsManager
@@ -784,4 +784,218 @@ class RecordingOverlay(QDialog):
         bottom_layout.addStretch()  # Push label to the left
         bottom_layout.setContentsMargins(20, 0, 20, 20)
         
-        layout.addLayout(bottom_layout) 
+        layout.addLayout(bottom_layout)
+
+class ProcessingDialog(QDialog):
+    def __init__(self, screenshot_count, session_folder, settings, guide_info=None, parent=None):
+        super().__init__(parent)
+        self.screenshot_count = screenshot_count
+        self.session_folder = session_folder
+        self.settings = settings
+        self.guide_info = guide_info
+        
+        # Callback for when processing finishes
+        self.processing_finished_callback = None
+        
+        # Setup UI
+        self.setup_ui()
+        self.start_processing()
+    
+    def setup_ui(self):
+        """Setup the processing dialog UI"""
+        self.setWindowTitle("GuideShot - Processing")
+        self.setFixedSize(600, 400)
+        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Window | Qt.WindowType.Tool)
+        
+        # Center the dialog on screen
+        screen = self.screen()
+        screen_geometry = screen.geometry()
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+        self.move(x, y)
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+        layout.setContentsMargins(30, 30, 30, 30)
+        
+        # Title
+        title_label = QLabel("Processing Your Guide")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 20px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 10px;
+            }
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # Screenshot count
+        count_label = QLabel(f"📸 {self.screenshot_count} screenshots captured")
+        count_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #7f8c8d;
+                margin-bottom: 20px;
+            }
+        """)
+        count_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(count_label)
+        
+        # Status label
+        self.status_label = QLabel("Preparing to process...")
+        self.status_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #3498db;
+                margin-bottom: 15px;
+            }
+        """)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.status_label)
+        
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid #bdc3c7;
+                border-radius: 5px;
+                text-align: center;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background-color: #3498db;
+                border-radius: 3px;
+            }
+        """)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+        
+        # Spinner animation (using dots)
+        self.spinner_label = QLabel("⏳")
+        self.spinner_label.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                color: #3498db;
+                margin: 10px 0;
+            }
+        """)
+        self.spinner_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.spinner_label)
+        
+        # Add spacing
+        layout.addSpacing(20)
+        
+        # Cancel button (optional)
+        self.cancel_button = QPushButton("Cancel Processing")
+        self.cancel_button.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                padding: 8px 16px;
+                border: 2px solid #e74c3c;
+                border-radius: 4px;
+                background-color: #e74c3c;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+                border-color: #c0392b;
+            }
+        """)
+        self.cancel_button.clicked.connect(self.cancel_processing)
+        layout.addWidget(self.cancel_button, alignment=Qt.AlignmentFlag.AlignCenter)
+    
+    def start_processing(self):
+        """Start the processing with progress updates"""
+        # For now, simulate processing with timer
+        self.progress_timer = QTimer()
+        self.progress_timer.timeout.connect(self.simulate_processing)
+        self.progress_timer.start(100)  # Update every 100ms
+        
+        # Start actual processing
+        self.process_files()
+    
+    def simulate_processing(self):
+        """Simulate progress updates"""
+        current = self.progress_bar.value()
+        if current < 90:  # Don't go to 100% until actually done
+            self.progress_bar.setValue(current + 1)
+        
+        # Animate spinner
+        spinner_chars = ["⏳", "⏳", "⏳", "⏳"]
+        self.spinner_label.setText(spinner_chars[current % len(spinner_chars)])
+    
+    def process_files(self):
+        """Process the files (PDF/video creation)"""
+        try:
+            # Check what needs to be created
+            create_pdf = self.settings.get('create_pdf', False)
+            create_video = self.settings.get('create_video', False)
+            
+            if not create_pdf and not create_video:
+                self.status_label.setText("✅ No processing needed")
+                self.progress_bar.setValue(100)
+                QTimer.singleShot(1000, self.close)
+                return
+            
+            # Create PDF if enabled
+            if create_pdf:
+                self.status_label.setText("📄 Creating PDF...")
+                try:
+                    from app.recorder import ScreenshotRecorder
+                    recorder = ScreenshotRecorder()
+                    recorder.current_session_folder = self.session_folder
+                    recorder.settings = self.settings
+                    recorder.guide_info = self.guide_info
+                    pdf_path = recorder.create_pdf_from_guides()
+                    self.status_label.setText("✅ PDF created successfully")
+                except Exception as e:
+                    self.status_label.setText(f"❌ PDF creation failed: {str(e)}")
+                    if self.processing_finished_callback:
+                        self.processing_finished_callback(False, f"PDF creation failed: {str(e)}")
+                    QTimer.singleShot(2000, self.close)
+                    return
+            
+            # Create video if enabled
+            if create_video:
+                self.status_label.setText("🎥 Creating video...")
+                try:
+                    from app.recorder import ScreenshotRecorder
+                    recorder = ScreenshotRecorder()
+                    recorder.current_session_folder = self.session_folder
+                    recorder.settings = self.settings
+                    recorder.guide_info = self.guide_info
+                    video_path = recorder.create_video_from_guides()
+                    self.status_label.setText("✅ Video created successfully")
+                except Exception as e:
+                    self.status_label.setText(f"❌ Video creation failed: {str(e)}")
+                    if self.processing_finished_callback:
+                        self.processing_finished_callback(False, f"Video creation failed: {str(e)}")
+                    QTimer.singleShot(2000, self.close)
+                    return
+            
+            # Complete
+            self.status_label.setText("✅ All processing completed!")
+            self.progress_bar.setValue(100)
+            if self.processing_finished_callback:
+                self.processing_finished_callback(True, "Processing completed successfully")
+            QTimer.singleShot(1000, self.close)
+            
+        except Exception as e:
+            self.status_label.setText(f"❌ Processing error: {str(e)}")
+            if self.processing_finished_callback:
+                self.processing_finished_callback(False, f"Processing error: {str(e)}")
+            QTimer.singleShot(2000, self.close)
+    
+    def cancel_processing(self):
+        """Cancel the processing"""
+        if hasattr(self, 'progress_timer'):
+            self.progress_timer.stop()
+        self.close()
+    
+    def set_processing_finished_callback(self, callback):
+        """Set the callback function to call when processing finishes"""
+        self.processing_finished_callback = callback 
